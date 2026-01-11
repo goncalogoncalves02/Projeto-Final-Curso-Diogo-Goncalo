@@ -25,4 +25,14 @@ dist-ssr
 comandos.txt
 exe-avaliacao.md
 projeto-final.md
+.vscode
+project_overview.md
 
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.env
+.venv
+env/
+venv/
