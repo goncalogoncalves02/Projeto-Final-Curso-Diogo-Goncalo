@@ -2,16 +2,16 @@ from fastapi import FastAPI
 from app.db.base import Base
 from app.db.session import engine
 from app.models import user  # Importar modelos para garantir que são criados
-
-# Cria as tabelas na base de dados (caso não existam)
-# Em produção, usaremos Alembic para migrações, mas aqui o create_all serve
-Base.metadata.create_all(bind=engine)
-
 # Incluir routers
 from app.routers import auth, users
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import settings
+
+# Cria as tabelas na base de dados (caso não existam)
+# Em produção, usaremos Alembic para migrações, mas aqui o create_all serve
+Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI(
     title="ATEC Gestão Escolar API",
