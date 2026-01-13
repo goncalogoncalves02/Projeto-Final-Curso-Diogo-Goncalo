@@ -36,4 +36,3 @@ __pycache__/
 .venv
 env/
 venv/
-backend\sql_app.db
