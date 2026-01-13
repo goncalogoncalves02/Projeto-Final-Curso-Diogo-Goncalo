@@ -12,6 +12,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import SocialCallback from "./pages/SocialCallback";
 import AdminUsers from "./pages/admin/Users";
+import Layout from "./components/Layout";
 import { Link } from "react-router-dom";
 import "./App.css";
 
@@ -24,36 +25,22 @@ const PrivateRoute = ({ children }) => {
 };
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-  console.log("Current User:", user); // Debug
+  const { user } = useAuth();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-      <h1 className="text-4xl font-bold text-gray-800">
-        Bem-vindo, {user?.full_name || user?.email}!
-      </h1>
-      <p className="mt-4 text-lg text-gray-600">
-        Estás autenticado no sistema da ATEC.
-      </p>
-
-      {user?.is_superuser && (
-        <div className="mt-6">
-          <Link
-            to="/admin/users"
-            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold shadow-md"
-          >
-            Gerir Utilizadores (Admin)
-          </Link>
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 max-w-2xl">
+        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+          Olá, {user?.full_name?.split(" ")[0] || user?.email}! 👋
+        </h1>
+        <p className="mt-4 text-xl text-gray-500">
+          Bem-vindo ao painel de gestão da <strong>ATEC</strong>.
+        </p>
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg text-blue-800 text-sm">
+          <p>
+            Usa a <strong>Barra Lateral</strong> à esquerda para navegar.
+          </p>
         </div>
-      )}
-
-      <div className="mt-8">
-        <button
-          onClick={logout}
-          className="px-6 py-2 text-white bg-red-600 rounded hover:bg-red-700"
-        >
-          Logout
-        </button>
       </div>
     </div>
   );
@@ -71,25 +58,17 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/social-callback" element={<SocialCallback />} />
 
-          {/* Rota Protegida (Dashboard) */}
+          {/* Rotas Protegidas com Sidebar (Layout) */}
           <Route
-            path="/"
             element={
               <PrivateRoute>
-                <Dashboard />
+                <Layout />
               </PrivateRoute>
             }
-          />
-
-          {/* Rota Protegida de Admin */}
-          <Route
-            path="/admin/users"
-            element={
-              <PrivateRoute>
-                <AdminUsers />
-              </PrivateRoute>
-            }
-          />
+          >
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+          </Route>
         </Routes>
       </Router>
     </AuthProvider>
