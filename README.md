@@ -35,9 +35,16 @@ O backend é feito em Python com FastAPI.
 
 4.  Instale as bibliotecas necessárias:
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+    - **Dica:** Antes de instalar, atualize o pip para evitar erros de compilação (especialmente com o `argon2-cffi`):
+      ```bash
+      python -m pip install --upgrade pip setuptools wheel
+      ```
+    - Depois instale os requisitos:
+      ```bash
+      pip install -r requirements.txt
+      ```
+
+    > **Nota:** Se der erro no `argon2-cffi-bindings`, é provável que falte o "C++ Build Tools". A atualização do pip acima costuma resolver, mas se persistir, pode ser necessário baixar o instalador do Visual Studio Build Tools.
 
 5.  Configure as variáveis de ambiente:
 
