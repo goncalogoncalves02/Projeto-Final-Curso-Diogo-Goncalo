@@ -30,7 +30,7 @@ O backend é feito em Python com FastAPI.
 
 3.  Ative o ambiente virtual:
 
-    - **Windows:** `venv\Scripts\activate`
+    - **Windows (PowerShell/CMD):** `venv\Scripts\activate`
     - **Mac/Linux:** `source venv/bin/activate`
 
 4.  Instale as bibliotecas necessárias:
