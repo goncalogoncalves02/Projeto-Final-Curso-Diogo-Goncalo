@@ -90,6 +90,7 @@ export const AuthProvider = ({ children }) => {
         verify2FA,
         loading,
         isAuthenticated,
+        setUser,
       }}
     >
       {children}

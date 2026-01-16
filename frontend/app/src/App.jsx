@@ -12,6 +12,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import SocialCallback from "./pages/SocialCallback";
 import AdminUsers from "./pages/admin/Users";
+import Profile from "./pages/Profile";
 import Layout from "./components/Layout";
 import { Link } from "react-router-dom";
 import "./App.css";
@@ -67,6 +68,7 @@ function App() {
             }
           >
             <Route path="/" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/admin/users" element={<AdminUsers />} />
           </Route>
         </Routes>

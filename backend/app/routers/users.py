@@ -43,6 +43,27 @@ def create_user(
     return user
 
 
+@router.put("/me", response_model=user_schema.User)
+def update_user_me(
+    user_in: user_schema.UserUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Atualiza o próprio perfil.
+    """
+    # Impedir que o utilizador altere o seu próprio role ou permissões
+    if user_in.role or user_in.is_superuser or user_in.is_active is not None:
+        # Podes levantar erro ou simplesmente ignorar. Vamos ignorar por segurança/simplicidade.
+        # Mas para garantir, forçamos os valores a None antes do update
+        user_in.role = None
+        user_in.is_superuser = None
+        user_in.is_active = None
+
+    user = user_crud.update_user(db, db_user=current_user, user_in=user_in)
+    return user
+
+
 @router.get("/{user_id}", response_model=user_schema.User)
 def read_user_by_id(
     user_id: int,
