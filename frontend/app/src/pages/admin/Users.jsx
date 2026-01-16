@@ -8,11 +8,23 @@ const AdminUsers = () => {
   const [error, setError] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  // Form states for edit
+  // Estados do form para editar
   const [formData, setFormData] = useState({
     full_name: "",
-    role: "student",
+    role: "estudante",
+    is_active: true,
+    is_superuser: false,
+    is_2fa_enabled: false,
+  });
+
+  // Estados do form de criação
+  const [createFormData, setCreateFormData] = useState({
+    email: "",
+    password: "",
+    full_name: "",
+    role: "estudante",
     is_active: true,
     is_superuser: false,
     is_2fa_enabled: false,
@@ -56,6 +68,26 @@ const AdminUsers = () => {
     }
   };
 
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.post("/users/", createFormData);
+      setUsers([...users, response.data]);
+      setIsCreating(false);
+      setCreateFormData({
+        email: "",
+        password: "",
+        full_name: "",
+        role: "estudante",
+        is_active: true,
+        is_superuser: false,
+        is_2fa_enabled: false,
+      });
+    } catch (error) {
+      alert(error.response?.data?.detail || "Erro ao criar utilizador.");
+    }
+  };
+
   const handleEditClick = (user) => {
     setEditingUser(user);
     setFormData({
@@ -86,12 +118,20 @@ const AdminUsers = () => {
         <h1 className="text-3xl font-bold text-gray-800">
           Gestão de Utilizadores
         </h1>
-        <Link
-          to="/"
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-        >
-          Voltar à Dashboard
-        </Link>
+        <div className="space-x-4">
+          <button
+            onClick={() => setIsCreating(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow"
+          >
+            + Novo Utilizador
+          </button>
+          <Link
+            to="/"
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Voltar à Dashboard
+          </Link>
+        </div>
       </div>
 
       {error && (
@@ -283,6 +323,134 @@ const AdminUsers = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Criação */}
+      {isCreating && (
+        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
+            <h2 className="text-xl font-bold mb-4">Novo Utilizador</h2>
+            <form onSubmit={handleCreate}>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={createFormData.email}
+                  onChange={(e) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      email: e.target.value,
+                    })
+                  }
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={createFormData.password}
+                  onChange={(e) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      password: e.target.value,
+                    })
+                  }
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Nome Completo
+                </label>
+                <input
+                  type="text"
+                  value={createFormData.full_name}
+                  onChange={(e) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      full_name: e.target.value,
+                    })
+                  }
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Função
+                </label>
+                <select
+                  value={createFormData.role}
+                  onChange={(e) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      role: e.target.value,
+                    })
+                  }
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                >
+                  <option value="estudante">Estudante</option>
+                  <option value="professor">Professor</option>
+                  <option value="secretaria">Secretaria</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={createFormData.is_active}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        is_active: e.target.checked,
+                      })
+                    }
+                    className="mr-2"
+                  />
+                  <span className="text-sm">Conta Ativa</span>
+                </label>
+              </div>
+              <div className="mb-6">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={createFormData.is_superuser}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        is_superuser: e.target.checked,
+                      })
+                    }
+                    className="mr-2"
+                  />
+                  <span className="text-sm">SuperUser</span>
+                </label>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsCreating(false)}
+                  className="mr-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Criar
                 </button>
               </div>
             </form>
