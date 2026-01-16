@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from app.db.base import Base
 from app.db.session import engine
-from app.models import user  # Importar modelos para garantir que são criados
+from app import (
+    models,
+)  # Importar todos os modelos para garantir que são criados (via __init__.py)
+
 # Incluir routers
 from app.routers import auth, users
 from fastapi.middleware.cors import CORSMiddleware

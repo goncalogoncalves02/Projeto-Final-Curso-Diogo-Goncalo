@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String, DateTime
+from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 
@@ -28,3 +30,16 @@ class User(Base):
     otp_expires_at = Column(
         String, nullable=True
     )  # Guardar como timestamp ou datetime string
+
+    # Novos campos
+    avatar_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relacionamentos (Back Populates)
+    files = relationship(
+        "UserFile", back_populates="user", cascade="all, delete-orphan"
+    )
+    enrollments = relationship(
+        "Enrollment", back_populates="user", cascade="all, delete-orphan"
+    )
+    teaching_modules = relationship("CourseModule", back_populates="trainer")
