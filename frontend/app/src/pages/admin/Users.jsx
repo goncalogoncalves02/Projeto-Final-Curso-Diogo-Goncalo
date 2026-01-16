@@ -187,7 +187,7 @@ const AdminUsers = () => {
 
       {/* Modal de Edição */}
       {editingUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-8 rounded-lg shadow-xl w-96">
             <h2 className="text-xl font-bold mb-4">
               Editar Utilizador #{editingUser.id}
@@ -292,7 +292,7 @@ const AdminUsers = () => {
 
       {/* Modal de Confirmação de Eliminação */}
       {userToDelete && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl w-96 transform transition-all scale-100">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
