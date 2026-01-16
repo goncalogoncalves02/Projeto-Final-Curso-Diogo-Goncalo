@@ -134,7 +134,9 @@ const AdminUsers = () => {
                                             ? "bg-purple-100 text-purple-800"
                                             : user.role === "professor"
                                               ? "bg-blue-100 text-blue-800"
-                                              : "bg-green-100 text-green-800"
+                                              : user.role === "secretaria"
+                                                ? "bg-orange-100 text-orange-800"
+                                                : "bg-green-100 text-green-800"
                                         }`}
                   >
                     {user.role}
@@ -212,6 +214,7 @@ const AdminUsers = () => {
                 >
                   <option value="estudante">Estudante</option>
                   <option value="professor">Professor</option>
+                  <option value="secretaria">Secretaria</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>

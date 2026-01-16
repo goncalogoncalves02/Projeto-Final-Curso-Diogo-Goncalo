@@ -76,12 +76,13 @@ const Register = () => {
             <div className="mt-4">
               <label className="block">Tipo de Conta</label>
               <select
-                name="função"
+                name="role"
                 onChange={handleChange}
                 className="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
               >
                 <option value="estudante">Estudante</option>
                 <option value="professor">Professor</option>
+                <option value="secretaria">Secretaria</option>
               </select>
             </div>
             <div className="mt-4">
