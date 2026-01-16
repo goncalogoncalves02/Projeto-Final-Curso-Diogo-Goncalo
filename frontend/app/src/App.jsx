@@ -31,7 +31,7 @@ const Dashboard = () => {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
       <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 max-w-2xl">
-        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-purple-600">
           Olá, {user?.full_name?.split(" ")[0] || user?.email}! 👋
         </h1>
         <p className="mt-4 text-xl text-gray-500">
