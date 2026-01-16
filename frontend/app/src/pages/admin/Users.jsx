@@ -7,6 +7,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editingUser, setEditingUser] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   // Form states for edit
   const [formData, setFormData] = useState({
@@ -40,14 +41,18 @@ const AdminUsers = () => {
     };
   }, []);
 
-  const handleDelete = async (userId) => {
-    if (window.confirm("Tens a certeza que queres eliminar este utilizador?")) {
-      try {
-        await api.delete(`/users/${userId}`);
-        setUsers(users.filter((u) => u.id !== userId));
-      } catch {
-        alert("Erro ao eliminar utilizador.");
-      }
+  const handleDeleteClick = (user) => {
+    setUserToDelete(user);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await api.delete(`/users/${userToDelete.id}`);
+      setUsers(users.filter((u) => u.id !== userToDelete.id));
+      setUserToDelete(null);
+    } catch {
+      alert("Erro ao eliminar utilizador.");
     }
   };
 
@@ -168,7 +173,7 @@ const AdminUsers = () => {
                     Editar
                   </button>
                   <button
-                    onClick={() => handleDelete(user.id)}
+                    onClick={() => handleDeleteClick(user)}
                     className="text-red-600 hover:text-red-900"
                   >
                     Apagar
@@ -281,6 +286,56 @@ const AdminUsers = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Eliminação */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-96 transform transition-all scale-100">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg
+                  className="h-6 w-6 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Eliminar Utilizador
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Tens a certeza que queres eliminar o utilizador{" "}
+                <span className="font-bold text-gray-800">
+                  {userToDelete.full_name || userToDelete.email}
+                </span>
+                ? <br />
+                Esta ação é irreversível.
+              </p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => setUserToDelete(null)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none transition-colors shadow-lg"
+                >
+                  Sim, Eliminar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
