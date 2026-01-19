@@ -16,6 +16,7 @@ class Course(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     area = Column(String, nullable=False)  # Ex: Informática, Robótica
+    description = Column(String, nullable=True)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     status = Column(Enum(CourseStatus), default=CourseStatus.planned)

@@ -6,3 +6,6 @@ from .course_module import CourseModule
 from .enrollment import Enrollment
 from .lesson import Lesson
 from .user_files import UserFile
+from .trainer_availability import TrainerAvailability
+from .module_grade import ModuleGrade
+from .chat_log import ChatLog

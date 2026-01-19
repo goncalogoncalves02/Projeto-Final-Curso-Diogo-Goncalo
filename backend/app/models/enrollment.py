@@ -19,7 +19,11 @@ class Enrollment(Base):
     enrollment_date = Column(Date, nullable=False)
     status = Column(Enum(EnrollmentStatus), default=EnrollmentStatus.active)
     final_grade = Column(Integer, nullable=True)  # 0-20
+    final_certificate_url = Column(String, nullable=True)
 
     # Relacionamentos
     user = relationship("User", back_populates="enrollments")
     course = relationship("Course", back_populates="enrollments")
+    module_grades = relationship(
+        "ModuleGrade", back_populates="enrollment", cascade="all, delete-orphan"
+    )

@@ -8,6 +8,7 @@ class Module(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
+    area = Column(String, nullable=True)  # Ex: Informática, Gestão
     default_duration_hours = Column(Integer, default=25)
 
     # Relacionamentos

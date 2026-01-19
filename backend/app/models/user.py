@@ -14,15 +14,21 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)  # Nullable para logins sociais
 
     # Informações pessoais básicas
     full_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
 
     # Controlos de acesso e estado
     is_active = Column(Boolean, default=False)  # Para validação de email
+    activation_token = Column(String, nullable=True)
     is_superuser = Column(Boolean, default=False)
     role = Column(String, default="estudante")  # 'estudante', 'professor', 'admin'
+
+    # Social Login
+    auth_provider = Column(String, default="local")  # 'local', 'google', 'facebook'
+    provider_id = Column(String, nullable=True)
 
     # Autenticação de Dois Fatores (2FA) - Email OTP
     is_2fa_enabled = Column(Boolean, default=False)
@@ -43,3 +49,7 @@ class User(Base):
         "Enrollment", back_populates="user", cascade="all, delete-orphan"
     )
     teaching_modules = relationship("CourseModule", back_populates="trainer")
+    availabilities = relationship(
+        "TrainerAvailability", back_populates="trainer", cascade="all, delete-orphan"
+    )
+    chat_logs = relationship("ChatLog", back_populates="user")
