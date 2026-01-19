@@ -1,26 +1,44 @@
+"""
+Modelo de Disponibilidade de Formador (TrainerAvailability)
+-----------------------------------------------------------
+Define as janelas temporais em que um formador pode lecionar.
+Crucial para o algoritmo de geração automática de horários.
+
+Pode definir:
+1. Padrões Recorrentes (ex: "Todas as Segundas das 09:00 às 13:00")
+2. Exceções ou dias específicos (ex: "No dia 25/12 estou indisponível") - Embora a lógica aqui pareça ser positiva (disponibilidade)
+"""
+
 from sqlalchemy import Column, Integer, Time, Boolean, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 
 class TrainerAvailability(Base):
-    """
-    Define a disponibilidade de um formador para dar aulas.
-    """
 
     __tablename__ = "trainer_availability"
 
     id = Column(Integer, primary_key=True, index=True)
-    trainer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    trainer_id = Column(Integer, ForeignKey("users.id"), nullable=False, doc="Formador")
 
-    # 1=Domingo, 2=Segunda, ..., 7=Sábado
-    day_of_week = Column(Integer, nullable=True)
+    # Definição Temporal
+    day_of_week = Column(
+        Integer, nullable=True, doc="Dia da semana (1=Domingo, 2=Segunda ... 7=Sábado)"
+    )
+    start_time = Column(Time, nullable=False, doc="Hora de início da disponibilidade")
+    end_time = Column(Time, nullable=False, doc="Hora de fim da disponibilidade")
 
-    start_time = Column(Time, nullable=False)
-    end_time = Column(Time, nullable=False)
+    # Recorrência vs Data Específica
+    is_recurring = Column(
+        Boolean, default=True, doc="Se True, aplica-se a todas as semanas naquele dia"
+    )
+    specific_date = Column(
+        Date,
+        nullable=True,
+        doc="Se preenchido, aplica-se apenas a esta data (ignora dia da semana)",
+    )
 
-    is_recurring = Column(Boolean, default=True)
-    specific_date = Column(Date, nullable=True)  # Se não for recorrente
+    # RELACIONAMENTOS
 
-    # Relacionamentos
+    # 1. Formador
     trainer = relationship("User", back_populates="availabilities")
