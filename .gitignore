@@ -39,3 +39,4 @@ __pycache__/
 env/
 venv/
 sql_app.db
+guide.md
