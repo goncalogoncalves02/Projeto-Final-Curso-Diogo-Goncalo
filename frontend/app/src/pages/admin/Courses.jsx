@@ -17,7 +17,7 @@ const AdminCourses = () => {
     description: "",
     start_date: "",
     end_date: "",
-    status: "planned",
+    status: "planeado",
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -171,11 +171,11 @@ const AdminCourses = () => {
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                       ${
-                        course.status === "active"
+                        course.status === "ativo"
                           ? "bg-green-100 text-green-800"
-                          : course.status === "finished"
+                          : course.status === "terminado"
                           ? "bg-gray-100 text-gray-800"
-                          : course.status === "cancelled"
+                          : course.status === "cancelado"
                           ? "bg-red-100 text-red-800"
                           : "bg-blue-100 text-blue-800"
                       }`}
@@ -268,10 +268,10 @@ const AdminCourses = () => {
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 >
-                  <option value="planned">Planeado</option>
-                  <option value="active">Ativo</option>
-                  <option value="finished">Terminado</option>
-                  <option value="cancelled">Cancelado</option>
+                  <option value="planeado">Planeado</option>
+                  <option value="ativo">Ativo</option>
+                  <option value="terminado">Terminado</option>
+                  <option value="cancelado">Cancelado</option>
                 </select>
               </div>
 
@@ -358,10 +358,10 @@ const AdminCourses = () => {
                   onChange={(e) => setCreateFormData({ ...createFormData, status: e.target.value })}
                   className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 >
-                  <option value="planned">Planeado</option>
-                  <option value="active">Ativo</option>
-                  <option value="finished">Terminado</option>
-                  <option value="cancelled">Cancelado</option>
+                  <option value="planeado">Planeado</option>
+                  <option value="ativo">Ativo</option>
+                  <option value="terminado">Terminado</option>
+                  <option value="cancelado">Cancelado</option>
                 </select>
               </div>
 

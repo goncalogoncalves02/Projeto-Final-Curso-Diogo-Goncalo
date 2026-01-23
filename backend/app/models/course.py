@@ -17,11 +17,10 @@ import enum
 
 
 class CourseStatus(str, enum.Enum):
-
-    active = "active"  # Curso a decorrer
-    planned = "planned"  # Curso planeado mas ainda não iniciou
-    finished = "finished"  # Curso terminado
-    cancelled = "cancelled"  # Curso cancelado
+    active = "ativo"  # Curso a decorrer
+    planned = "planeado"  # Curso planeado mas ainda não iniciou
+    finished = "terminado"  # Curso terminado
+    cancelled = "cancelado"  # Curso cancelado
 
 
 class Course(Base):
