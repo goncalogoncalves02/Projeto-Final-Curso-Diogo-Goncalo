@@ -15,6 +15,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminCourses from "./pages/admin/Courses";
 import AdminModules from "./pages/admin/Modules";
 import AdminClassrooms from "./pages/admin/Classrooms";
+import Availability from "./pages/Availability";
 import Profile from "./pages/Profile";
 import Layout from "./components/Layout";
 import { Link } from "react-router-dom";
@@ -76,6 +77,7 @@ function App() {
             <Route path="/admin/courses" element={<AdminCourses />} />
             <Route path="/admin/modules" element={<AdminModules />} />
             <Route path="/admin/classrooms" element={<AdminClassrooms />} />
+            <Route path="/availability" element={<Availability />} />
           </Route>
         </Routes>
       </Router>

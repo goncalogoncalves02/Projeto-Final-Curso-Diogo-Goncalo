@@ -6,7 +6,7 @@ from app import (
 )  # Importar todos os modelos para garantir que são criados (via __init__.py)
 
 # Incluir routers
-from app.routers import auth, users, modules, classrooms, courses
+from app.routers import auth, users, modules, classrooms, courses, trainer_availability
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import settings
@@ -56,3 +56,6 @@ app.include_router(users.router)
 app.include_router(modules.router, prefix="/modules", tags=["modules"])
 app.include_router(classrooms.router, prefix="/classrooms", tags=["classrooms"])
 app.include_router(courses.router, prefix="/courses", tags=["courses"])
+app.include_router(
+    trainer_availability.router, prefix="/availability", tags=["availability"]
+)

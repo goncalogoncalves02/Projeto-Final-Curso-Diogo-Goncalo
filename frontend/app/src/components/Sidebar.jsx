@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LayoutDashboard, Users, LogOut, Settings, BookOpen, Layers, Monitor } from "lucide-react";
+import { LayoutDashboard, Users, LogOut, Settings, BookOpen, Layers, Monitor, Calendar } from "lucide-react";
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
@@ -71,6 +71,14 @@ const Sidebar = () => {
           </>
         )}
 
+        <Link
+          to="/availability"
+          className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive("/availability")}`}
+        >
+          <Calendar className="w-5 h-5 mr-3" />
+          <span className="font-medium">Disponibilidade</span>
+        </Link>
+        
         <Link
           to="/profile"
           className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive("/profile")}`}
