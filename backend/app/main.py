@@ -6,7 +6,7 @@ from app import (
 )  # Importar todos os modelos para garantir que são criados (via __init__.py)
 
 # Incluir routers
-from app.routers import auth, users
+from app.routers import auth, users, modules, classrooms, courses
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import settings
@@ -53,3 +53,6 @@ def read_root():
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(modules.router, prefix="/modules", tags=["modules"])
+app.include_router(classrooms.router, prefix="/classrooms", tags=["classrooms"])
+app.include_router(courses.router, prefix="/courses", tags=["courses"])
