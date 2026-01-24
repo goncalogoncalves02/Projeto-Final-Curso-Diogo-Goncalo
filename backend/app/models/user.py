@@ -103,7 +103,7 @@ class User(Base):
     # 3. Módulos que o utilizador leciona (apenas para professores)
     teaching_modules = relationship("CourseModule", back_populates="trainer")
 
-    # 4. Disponibilidade do formador (horários em que pode dar aulas)
+    # 4. Disponibilidade do professor (horários em que pode dar aulas)
     availabilities = relationship(
         "TrainerAvailability", back_populates="trainer", cascade="all, delete-orphan"
     )

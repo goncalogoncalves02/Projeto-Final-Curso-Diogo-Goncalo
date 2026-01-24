@@ -45,5 +45,5 @@ class ModuleGrade(Base):
     # 1. Inscrição (Acesso ao aluno e curso)
     enrollment = relationship("Enrollment", back_populates="module_grades")
 
-    # 2. Módulo do Curso (Acesso ao módulo e formador)
+    # 2. Módulo do Curso (Acesso ao módulo e rofessor)
     course_module = relationship("CourseModule")

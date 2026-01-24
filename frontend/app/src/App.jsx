@@ -12,6 +12,13 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import SocialCallback from "./pages/SocialCallback";
 import AdminUsers from "./pages/admin/Users";
+import AdminCourses from "./pages/admin/Courses";
+import AdminModules from "./pages/admin/Modules";
+import AdminClassrooms from "./pages/admin/Classrooms";
+import AdminAvailability from "./pages/admin/AdminAvailability";
+import AdminEnrollments from "./pages/admin/Enrollments";
+import AdminModuleGrades from "./pages/admin/ModuleGrades";
+import Availability from "./pages/Availability";
 import Profile from "./pages/Profile";
 import Layout from "./components/Layout";
 import { Link } from "react-router-dom";
@@ -70,6 +77,13 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/courses" element={<AdminCourses />} />
+            <Route path="/admin/modules" element={<AdminModules />} />
+            <Route path="/admin/classrooms" element={<AdminClassrooms />} />
+            <Route path="/admin/availability" element={<AdminAvailability />} />
+            <Route path="/admin/enrollments" element={<AdminEnrollments />} />
+            <Route path="/admin/module-grades" element={<AdminModuleGrades />} />
+            <Route path="/availability" element={<Availability />} />
           </Route>
         </Routes>
       </Router>

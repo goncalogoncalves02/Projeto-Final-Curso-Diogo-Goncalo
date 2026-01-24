@@ -27,7 +27,7 @@ class Lesson(Base):
         Integer,
         ForeignKey("course_modules.id"),
         nullable=False,
-        doc="A que módulo/formador pertence esta aula",
+        doc="A que módulo/professor pertence esta aula",
     )
     classroom_id = Column(
         Integer,
