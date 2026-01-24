@@ -8,3 +8,6 @@ from .trainer_availability import (
     TrainerAvailabilityCreate,
     TrainerAvailabilityUpdate,
 )
+from .enrollment import Enrollment, EnrollmentCreate, EnrollmentUpdate
+from .module_grade import ModuleGrade, ModuleGradeCreate, ModuleGradeUpdate
+from .course_module import CourseModule, CourseModuleCreate, CourseModuleUpdate

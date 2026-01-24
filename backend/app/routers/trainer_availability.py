@@ -21,24 +21,22 @@ def read_availabilities(
     current_user: User = Depends(deps.get_current_active_user),
     skip: int = 0,
     limit: int = 100,
+    trainer_id: int | None = None,
 ):
     """
     Lista disponibilidades.
-    - Se for Admin, vê todas (ou filtra por formador - TODO).
-    - Se for Formador, vê apenas as suas.
+    - Se for Admin, vê todas (ou filtra por professor).
+    - Se for Professor, vê apenas as suas.
     """
+    query = db.query(TrainerAvailabilityModel)
+
     if current_user.is_superuser:
-        availabilities = (
-            db.query(TrainerAvailabilityModel).offset(skip).limit(limit).all()
-        )
+        if trainer_id:
+            query = query.filter(TrainerAvailabilityModel.trainer_id == trainer_id)
     else:
-        availabilities = (
-            db.query(TrainerAvailabilityModel)
-            .filter(TrainerAvailabilityModel.trainer_id == current_user.id)
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        query = query.filter(TrainerAvailabilityModel.trainer_id == current_user.id)
+
+    availabilities = query.offset(skip).limit(limit).all()
     return availabilities
 
 

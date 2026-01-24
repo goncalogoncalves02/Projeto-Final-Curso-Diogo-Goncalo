@@ -2,10 +2,10 @@
 Modelo de Módulo do Curso (CourseModule)
 ----------------------------------------
 Tabela de ligação crítica que define a estrutura de um curso ("Receita do Curso").
-Associa um Módulo (Template) a uma edição de Curso (Course), atribuindo um formador e uma sala.
+Associa um Módulo (Template) a uma edição de Curso (Course), atribuindo um professor e uma sala.
 
 Funcionalidades:
-- Definição do formador responsável por este módulo nesta edição.
+- Definição do professor responsável por este módulo nesta edição.
 - Sala preferencial/padrão.
 - Ordem sequencial no curso.
 - Carga horária específica.

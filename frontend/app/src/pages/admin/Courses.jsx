@@ -96,6 +96,66 @@ const AdminCourses = () => {
     }
   };
 
+  /* Logic for Managing Modules */
+  const [managingCourse, setManagingCourse] = useState(null);
+  const [courseModules, setCourseModules] = useState([]);
+  const [availableModules, setAvailableModules] = useState([]);
+  const [trainers, setTrainers] = useState([]);
+  const [classrooms, setClassrooms] = useState([]);
+  
+  // Form for adding module to course
+  const [addModuleForm, setAddModuleForm] = useState({
+      module_id: "",
+      trainer_id: "",
+      classroom_id: "",
+      total_hours: 25,
+      order: 1
+  });
+
+  const handleManageModulesClick = async (course) => {
+      setManagingCourse(course);
+      try {
+          // Parallel fetch for dependencies
+          const [cModulesRes, allModulesRes, usersRes, classroomsRes] = await Promise.all([
+              api.get(`/courses/${course.id}/modules`),
+              api.get("/modules/?limit=100"),
+              api.get("/users/?limit=100"),
+              api.get("/classrooms/?limit=100")
+          ]);
+          setCourseModules(cModulesRes.data);
+          setAvailableModules(allModulesRes.data);
+          setTrainers(usersRes.data.filter(u => u.role === 'professor'));
+          setClassrooms(classroomsRes.data);
+      } catch (err) {
+          console.error(err);
+          alert("Erro ao carregar dados dos módulos.");
+      }
+  };
+
+  const handleAddModule = async (e) => {
+      e.preventDefault();
+      if (!managingCourse) return;
+      
+      try {
+          const payload = {
+              module_id: parseInt(addModuleForm.module_id),
+              trainer_id: parseInt(addModuleForm.trainer_id),
+              classroom_id: addModuleForm.classroom_id ? parseInt(addModuleForm.classroom_id) : null,
+              total_hours: parseInt(addModuleForm.total_hours),
+              order: parseInt(addModuleForm.order)
+          };
+          
+          const response = await api.post(`/courses/${managingCourse.id}/modules`, payload);
+          setCourseModules([...courseModules, response.data]);
+          // Reset form somewhat
+          setAddModuleForm({ ...addModuleForm, module_id: "", order: addModuleForm.order + 1 });
+      } catch (err) {
+          console.error(err);
+          alert("Erro ao adicionar módulo ao curso.");
+      }
+  };
+
+
   if (loading) return <div className="p-8 text-center">A carregar...</div>;
 
   return (
@@ -185,6 +245,12 @@ const AdminCourses = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
+                    onClick={() => handleManageModulesClick(course)}
+                    className="text-teal-600 hover:text-teal-900 mr-4 font-bold"
+                  >
+                    Módulos
+                  </button>
+                  <button
                     onClick={() => handleEditClick(course)}
                     className="text-indigo-600 hover:text-indigo-900 mr-4"
                   >
@@ -202,6 +268,129 @@ const AdminCourses = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Modal de Gestão de Módulos */}
+      {managingCourse && (
+          <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
+              <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl h-5/6 flex flex-col">
+                  <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold">
+                          Estrutura Curricular: {managingCourse.name}
+                      </h2>
+                      <button 
+                          onClick={() => setManagingCourse(null)}
+                          className="text-gray-500 hover:text-gray-700 text-2xl"
+                      >
+                          &times;
+                      </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+                       {/* Esquerda: Lista Atual */}
+                       <div className="bg-gray-50 p-4 rounded-lg">
+                           <h3 className="font-bold text-gray-700 mb-4 border-b pb-2">Módulos no Curso</h3>
+                           {courseModules.length === 0 ? (
+                               <p className="text-gray-500 italic">Nenhum módulo adicionado ainda.</p>
+                           ) : (
+                               <ul className="space-y-3">
+                                   {courseModules.sort((a,b) => a.order - b.order).map(cm => (
+                                       <li key={cm.id} className="bg-white p-3 rounded shadow-sm border border-gray-200">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <span className="font-bold text-blue-800">#{cm.order} - {cm.module?.name}</span>
+                                                    <div className="text-xs text-gray-600 mt-1">
+                                                        <span className="block">Professor: {cm.trainer?.full_name || "N/A"}</span>
+                                                        <span className="block">Sala: {cm.classroom_id || "N/A"}</span>
+                                                        <span className="block">Duração: {cm.total_hours}h</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                       </li>
+                                   ))}
+                               </ul>
+                           )}
+                       </div>
+
+                       {/* Direita: Adicionar Novo */}
+                       <div className="bg-blue-50 p-4 rounded-lg h-fit">
+                           <h3 className="font-bold text-blue-800 mb-4 border-b border-blue-200 pb-2">Adicionar Módulo</h3>
+                           <form onSubmit={handleAddModule}>
+                               <div className="mb-3">
+                                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Selecione Módulo</label>
+                                   <select
+                                       className="w-full border rounded p-2 text-sm"
+                                       value={addModuleForm.module_id}
+                                       onChange={e => setAddModuleForm({...addModuleForm, module_id: e.target.value})}
+                                       required
+                                   >
+                                       <option value="">-- Escolher Módulo --</option>
+                                       {availableModules.map(m => (
+                                           <option key={m.id} value={m.id}>{m.name} ({m.area})</option>
+                                       ))}
+                                   </select>
+                               </div>
+
+                               <div className="mb-3">
+                                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Professor</label>
+                                   <select
+                                       className="w-full border rounded p-2 text-sm"
+                                       value={addModuleForm.trainer_id}
+                                       onChange={e => setAddModuleForm({...addModuleForm, trainer_id: e.target.value})}
+                                       required
+                                   >
+                                       <option value="">-- Escolher Professor --</option>
+                                       {trainers.map(t => (
+                                           <option key={t.id} value={t.id}>{t.full_name}</option>
+                                       ))}
+                                   </select>
+                               </div>
+
+                               <div className="grid grid-cols-2 gap-2 mb-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Ordem</label>
+                                        <input
+                                            type="number"
+                                            className="w-full border rounded p-2 text-sm"
+                                            value={addModuleForm.order}
+                                            onChange={e => setAddModuleForm({...addModuleForm, order: e.target.value})}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Horas</label>
+                                        <input
+                                            type="number"
+                                            className="w-full border rounded p-2 text-sm"
+                                            value={addModuleForm.total_hours}
+                                            onChange={e => setAddModuleForm({...addModuleForm, total_hours: e.target.value})}
+                                            required
+                                        />
+                                    </div>
+                               </div>
+
+                               <div className="mb-4">
+                                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Sala (Opcional)</label>
+                                   <select
+                                       className="w-full border rounded p-2 text-sm"
+                                       value={addModuleForm.classroom_id}
+                                       onChange={e => setAddModuleForm({...addModuleForm, classroom_id: e.target.value})}
+                                   >
+                                       <option value="">-- Sem sala definida --</option>
+                                       {classrooms.map(c => (
+                                           <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
+                                       ))}
+                                   </select>
+                               </div>
+
+                               <button type="submit" className="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">
+                                   Adicionar ao Curso
+                               </button>
+                           </form>
+                       </div>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {/* Modal de Edição */}
       {editingCourse && (
