@@ -7,6 +7,7 @@ const AdminAvailability = () => {
   const [selectedUser, setSelectedUser] = useState("");
   const [availabilities, setAvailabilities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const daysOfWeek = [
     { id: 1, name: "Domingo" },
@@ -23,13 +24,22 @@ const AdminAvailability = () => {
     const fetchUsers = async () => {
       try {
         const response = await api.get("/users/?limit=100");
-        setUsers(response.data.filter(u => u.role === 'professor' || u.is_superuser));
+        setUsers(response.data.filter(u => u.role === 'professor'));
       } catch (error) {
         console.error("Erro ao carregar utilizadores", error);
       }
     };
     fetchUsers();
   }, []);
+
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => {
+    const term = searchTerm.toLowerCase();
+    return (
+      user.email?.toLowerCase().includes(term) ||
+      user.full_name?.toLowerCase().includes(term)
+    );
+  });
 
   const handleUserChange = (e) => {
     const userId = e.target.value;
@@ -76,16 +86,29 @@ const AdminAvailability = () => {
           <User className="w-4 h-4 mr-2" />
           Selecionar Professor
         </label>
+        
+        {/* Search Input */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Pesquisar por nome ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-gray-50"
+          />
+        </div>
+
         <div className="relative">
           <select
             value={selectedUser}
             onChange={handleUserChange}
             className="block appearance-none w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
           >
-            <option value="">Selecione um utilizador...</option>
-            {users.map((user) => (
+            <option value="">Selecione um professor... ({filteredUsers.length} encontrados)</option>
+            {filteredUsers.map((user) => (
               <option key={user.id} value={user.id}>
-                {user.email} {user.full_name ? `(${user.full_name})` : ""}
+                {user.full_name || user.email} {user.full_name ? `(${user.email})` : ""}
               </option>
             ))}
           </select>

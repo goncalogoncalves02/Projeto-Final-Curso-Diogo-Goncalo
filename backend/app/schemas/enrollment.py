@@ -31,9 +31,7 @@ class EnrollmentUpdate(BaseModel):
 # Response Schema
 class Enrollment(EnrollmentBase):
     id: int
-    # user: Optional[User] = None # Avoid circular deps if possible, or use lazy loading
-    # course: Optional[Course] = None
+    user: Optional[User] = None  # Include user details in response
 
     class Config:
         from_attributes = True
-        # arbitrary_types_allowed = True

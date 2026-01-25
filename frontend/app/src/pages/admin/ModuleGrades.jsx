@@ -6,21 +6,6 @@ import Modal from "../../components/Modal";
 const DEFAULT_GRADE = { grade: "", comments: "" };
 
 const AdminModuleGrades = () => {
-    // ... (rest of component)
-// ...
-                                            <tbody className="text-sm">
-                                                {courseModules.sort((a,b)=>a.order-b.order).map(cm => {
-                                                    const currentGrade = grades[cm.id] || DEFAULT_GRADE;
-                                                    return (
-                                                        <GradeRow 
-                                                            key={cm.id} 
-                                                            courseModule={cm} 
-                                                            initialData={currentGrade}
-                                                            onSave={handleSaveGrade}
-                                                        />
-                                                    );
-                                                })}
-                                            </tbody>
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState("");
     
@@ -318,7 +303,7 @@ const GradeRow = ({ courseModule, initialData, onSave }) => {
                 {isDirty && (
                     <button 
                         onClick={handleSave}
-                        className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 shadow animate-pulse"
+                        className="bg-green-600 text-white px-3 py-1 mx-2 rounded text-xs hover:bg-green-700 shadow animate-pulse"
                     >
                         Guardar
                     </button>
