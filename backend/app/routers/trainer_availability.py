@@ -22,16 +22,21 @@ def read_availabilities(
     skip: int = 0,
     limit: int = 100,
     trainer_id: int | None = None,
+    my_only: bool = False,
 ):
     """
     Lista disponibilidades.
     - Se for Admin, vê todas (ou filtra por professor).
     - Se for Professor, vê apenas as suas.
+    - Se my_only=True, Admin vê apenas as suas próprias.
     """
     query = db.query(TrainerAvailabilityModel)
 
     if current_user.is_superuser:
-        if trainer_id:
+        if my_only:
+            # Admin quer ver apenas as suas próprias
+            query = query.filter(TrainerAvailabilityModel.trainer_id == current_user.id)
+        elif trainer_id:
             query = query.filter(TrainerAvailabilityModel.trainer_id == trainer_id)
     else:
         query = query.filter(TrainerAvailabilityModel.trainer_id == current_user.id)

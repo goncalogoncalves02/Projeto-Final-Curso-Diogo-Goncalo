@@ -111,6 +111,8 @@ const AdminCourses = () => {
       total_hours: 25,
       order: 1
   });
+  const [editingModuleId, setEditingModuleId] = useState(null); // null = creating, id = editing
+  const [moduleToDelete, setModuleToDelete] = useState(null); // For delete confirmation modal
 
   const handleManageModulesClick = async (course) => {
       setManagingCourse(course);
@@ -132,26 +134,79 @@ const AdminCourses = () => {
       }
   };
 
-  const handleAddModule = async (e) => {
+  const handleModuleClick = (cm) => {
+      // Populate form with existing data for editing
+      setEditingModuleId(cm.id);
+      setAddModuleForm({
+          module_id: cm.module_id || cm.module?.id || "",
+          trainer_id: cm.trainer_id || cm.trainer?.id || "",
+          classroom_id: cm.classroom_id || "",
+          total_hours: cm.total_hours || 25,
+          order: cm.order || 1
+      });
+  };
+
+  const handleCancelEdit = () => {
+      setEditingModuleId(null);
+      setAddModuleForm({
+          module_id: "",
+          trainer_id: "",
+          classroom_id: "",
+          total_hours: 25,
+          order: courseModules.length + 1
+      });
+  };
+
+  const handleSubmitModule = async (e) => {
       e.preventDefault();
       if (!managingCourse) return;
       
       try {
           const payload = {
-              module_id: parseInt(addModuleForm.module_id),
               trainer_id: parseInt(addModuleForm.trainer_id),
               classroom_id: addModuleForm.classroom_id ? parseInt(addModuleForm.classroom_id) : null,
               total_hours: parseInt(addModuleForm.total_hours),
               order: parseInt(addModuleForm.order)
           };
           
-          const response = await api.post(`/courses/${managingCourse.id}/modules`, payload);
-          setCourseModules([...courseModules, response.data]);
-          // Reset form somewhat
-          setAddModuleForm({ ...addModuleForm, module_id: "", order: addModuleForm.order + 1 });
+          if (editingModuleId) {
+              // UPDATE existing module
+              const response = await api.put(`/courses/${managingCourse.id}/modules/${editingModuleId}`, payload);
+              setCourseModules(courseModules.map(cm => cm.id === editingModuleId ? response.data : cm));
+              setEditingModuleId(null);
+          } else {
+              // CREATE new module
+              payload.module_id = parseInt(addModuleForm.module_id);
+              const response = await api.post(`/courses/${managingCourse.id}/modules`, payload);
+              setCourseModules([...courseModules, response.data]);
+          }
+          
+          // Reset form
+          setAddModuleForm({ module_id: "", trainer_id: "", classroom_id: "", total_hours: 25, order: courseModules.length + 2 });
       } catch (err) {
           console.error(err);
-          alert("Erro ao adicionar módulo ao curso.");
+          alert(editingModuleId ? "Erro ao atualizar módulo." : "Erro ao adicionar módulo ao curso.");
+      }
+  };
+
+  const handleDeleteModule = async (moduleId) => {
+      // Show confirmation modal instead of native confirm
+      setModuleToDelete(moduleId);
+  };
+
+  const confirmDeleteModule = async () => {
+      if (!moduleToDelete || !managingCourse) return;
+      try {
+          await api.delete(`/courses/${managingCourse.id}/modules/${moduleToDelete}`);
+          setCourseModules(courseModules.filter(cm => cm.id !== moduleToDelete));
+          if (editingModuleId === moduleToDelete) {
+              handleCancelEdit();
+          }
+          setModuleToDelete(null);
+      } catch (err) {
+          console.error(err);
+          alert("Erro ao remover módulo.");
+          setModuleToDelete(null);
       }
   };
 
@@ -294,38 +349,61 @@ const AdminCourses = () => {
                            ) : (
                                <ul className="space-y-3">
                                    {courseModules.sort((a,b) => a.order - b.order).map(cm => (
-                                       <li key={cm.id} className="bg-white p-3 rounded shadow-sm border border-gray-200">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <span className="font-bold text-blue-800">#{cm.order} - {cm.module?.name}</span>
-                                                    <div className="text-xs text-gray-600 mt-1">
-                                                        <span className="block">Professor: {cm.trainer?.full_name || "N/A"}</span>
-                                                        <span className="block">Sala: {cm.classroom_id || "N/A"}</span>
-                                                        <span className="block">Duração: {cm.total_hours}h</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                       </li>
+                                       <li 
+                                           key={cm.id} 
+                                           onClick={() => handleModuleClick(cm)}
+                                           className={`bg-white p-3 rounded shadow-sm border cursor-pointer hover:border-blue-400 transition-colors ${
+                                               editingModuleId === cm.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                           }`}
+                                       >
+                                             <div className="flex justify-between items-start">
+                                                 <div>
+                                                     <span className="font-bold text-blue-800">#{cm.order} - {cm.module?.name}</span>
+                                                     <div className="text-xs text-gray-600 mt-1">
+                                                         <span className="block">Professor: {cm.trainer?.full_name || "N/A"}</span>
+                                                         <span className="block">Sala: {cm.classroom_id || "N/A"}</span>
+                                                         <span className="block">Duração: {cm.total_hours}h</span>
+                                                     </div>
+                                                 </div>
+                                                 <button 
+                                                     onClick={(e) => { e.stopPropagation(); handleDeleteModule(cm.id); }}
+                                                     className="text-red-500 hover:text-red-700 text-xs"
+                                                     title="Remover módulo"
+                                                 >
+                                                     ✕
+                                                 </button>
+                                             </div>
+                                             <p className="text-xs text-blue-500 mt-2 italic">Clique para editar</p>
+                                        </li>
                                    ))}
                                </ul>
                            )}
                        </div>
 
-                       {/* Direita: Adicionar Novo */}
+                       {/* Direita: Adicionar/Editar */}
                        <div className="bg-blue-50 p-4 rounded-lg h-fit">
-                           <h3 className="font-bold text-blue-800 mb-4 border-b border-blue-200 pb-2">Adicionar Módulo</h3>
-                           <form onSubmit={handleAddModule}>
+                           <h3 className="font-bold text-blue-800 mb-4 border-b border-blue-200 pb-2">
+                               {editingModuleId ? 'Editar Módulo' : 'Adicionar Módulo'}
+                           </h3>
+                           <form onSubmit={handleSubmitModule}>
                                <div className="mb-3">
                                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Selecione Módulo</label>
                                    <select
                                        className="w-full border rounded p-2 text-sm"
                                        value={addModuleForm.module_id}
-                                       onChange={e => setAddModuleForm({...addModuleForm, module_id: e.target.value})}
+                                       onChange={e => {
+                                           const selectedModule = availableModules.find(m => m.id === parseInt(e.target.value));
+                                           setAddModuleForm({
+                                               ...addModuleForm, 
+                                               module_id: e.target.value,
+                                               total_hours: selectedModule?.default_duration_hours || 25
+                                           });
+                                       }}
                                        required
                                    >
                                        <option value="">-- Escolher Módulo --</option>
                                        {availableModules.map(m => (
-                                           <option key={m.id} value={m.id}>{m.name} ({m.area})</option>
+                                           <option key={m.id} value={m.id}>{m.name} ({m.area}) - {m.default_duration_hours}h</option>
                                        ))}
                                    </select>
                                </div>
@@ -360,10 +438,10 @@ const AdminCourses = () => {
                                         <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Horas</label>
                                         <input
                                             type="number"
-                                            className="w-full border rounded p-2 text-sm"
+                                            className="w-full border rounded p-2 text-sm bg-gray-100 cursor-not-allowed"
                                             value={addModuleForm.total_hours}
-                                            onChange={e => setAddModuleForm({...addModuleForm, total_hours: e.target.value})}
-                                            required
+                                            readOnly
+                                            title="Duração definida no módulo"
                                         />
                                     </div>
                                </div>
@@ -382,9 +460,20 @@ const AdminCourses = () => {
                                    </select>
                                </div>
 
-                               <button type="submit" className="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">
-                                   Adicionar ao Curso
-                               </button>
+                               <div className="flex gap-2">
+                                   <button type="submit" className="flex-1 bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">
+                                       {editingModuleId ? 'Guardar Alterações' : 'Adicionar ao Curso'}
+                                   </button>
+                                   {editingModuleId && (
+                                       <button 
+                                           type="button" 
+                                           onClick={handleCancelEdit}
+                                           className="px-4 py-2 bg-gray-300 text-gray-700 font-bold rounded hover:bg-gray-400 transition"
+                                       >
+                                           Cancelar
+                                       </button>
+                                   )}
+                               </div>
                            </form>
                        </div>
                   </div>
@@ -601,6 +690,40 @@ const AdminCourses = () => {
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none transition-colors shadow-lg"
                 >
                   Sim, Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Eliminação de Módulo */}
+      {moduleToDelete && (
+        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-96 transform transition-all scale-100">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Remover Módulo</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Tens a certeza que queres remover este módulo do curso? <br />
+                Esta ação é irreversível.
+              </p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => setModuleToDelete(null)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDeleteModule}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none transition-colors"
+                >
+                  Remover
                 </button>
               </div>
             </div>

@@ -6,7 +6,11 @@ from app.models.course import Course as CourseModel
 from app.schemas.course import Course, CourseCreate, CourseUpdate
 from app.api import deps
 from app.models.course_module import CourseModule as CourseModuleModel
-from app.schemas.course_module import CourseModule, CourseModuleCreate
+from app.schemas.course_module import (
+    CourseModule,
+    CourseModuleCreate,
+    CourseModuleUpdate,
+)
 
 router = APIRouter()
 
@@ -142,4 +146,60 @@ def add_module_to_course(
     db.add(course_module)
     db.commit()
     db.refresh(course_module)
+    return course_module
+
+
+@router.put("/{course_id}/modules/{module_id}", response_model=CourseModule)
+def update_course_module(
+    course_id: int,
+    module_id: int,
+    course_module_in: CourseModuleUpdate,
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(deps.get_current_active_superuser),
+):
+    """
+    Atualiza um módulo no curso (professor, sala, ordem, etc).
+    """
+    course_module = (
+        db.query(CourseModuleModel)
+        .filter(
+            CourseModuleModel.id == module_id, CourseModuleModel.course_id == course_id
+        )
+        .first()
+    )
+    if not course_module:
+        raise HTTPException(status_code=404, detail="Course module not found")
+
+    update_data = course_module_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(course_module, field, value)
+
+    db.add(course_module)
+    db.commit()
+    db.refresh(course_module)
+    return course_module
+
+
+@router.delete("/{course_id}/modules/{module_id}", response_model=CourseModule)
+def delete_course_module(
+    course_id: int,
+    module_id: int,
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(deps.get_current_active_superuser),
+):
+    """
+    Remove um módulo de um curso.
+    """
+    course_module = (
+        db.query(CourseModuleModel)
+        .filter(
+            CourseModuleModel.id == module_id, CourseModuleModel.course_id == course_id
+        )
+        .first()
+    )
+    if not course_module:
+        raise HTTPException(status_code=404, detail="Course module not found")
+
+    db.delete(course_module)
+    db.commit()
     return course_module

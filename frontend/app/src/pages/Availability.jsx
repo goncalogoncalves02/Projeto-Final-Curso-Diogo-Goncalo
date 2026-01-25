@@ -30,7 +30,7 @@ const Availability = () => {
   // Fetch Availabilities
   const fetchAvailabilities = async () => {
     try {
-      const response = await api.get("/availability/");
+      const response = await api.get("/availability/?my_only=true");
       const sorted = response.data.sort((a, b) => {
         // Sort rationale: Date first (asc), then Day of Week (asc)
         if (a.specific_date && b.specific_date) return new Date(a.specific_date) - new Date(b.specific_date);
