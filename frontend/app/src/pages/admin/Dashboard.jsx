@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
 import {
@@ -24,29 +25,33 @@ ChartJS.register(
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.get("/statistics/");
-        setStats(response.data);
-      } catch (err) {
-        console.error("Erro ao carregar estatísticas:", err);
-        setError("Não foi possível carregar as estatísticas.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await api.get("/statistics/");
+      setStats(response.data);
+      setError(null);
+    } catch (err) {
+      console.error("Erro ao carregar estatísticas:", err);
+      setError("Não foi possível carregar as estatísticas.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  // Carregar dados quando a página é montada ou quando navega para ela
+  useEffect(() => {
     if (user?.is_superuser) {
       fetchStats();
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, location.key, fetchStats]);
 
   // Se não é admin, mostra dashboard simples
   if (!user?.is_superuser) {
