@@ -40,3 +40,4 @@ env/
 venv/
 sql_app.db
 guide.md
+PROJECT_STATUS.md

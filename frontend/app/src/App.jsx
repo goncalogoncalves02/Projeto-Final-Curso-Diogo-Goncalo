@@ -18,10 +18,10 @@ import AdminClassrooms from "./pages/admin/Classrooms";
 import AdminAvailability from "./pages/admin/AdminAvailability";
 import AdminEnrollments from "./pages/admin/Enrollments";
 import AdminModuleGrades from "./pages/admin/ModuleGrades";
+import Dashboard from "./pages/admin/Dashboard";
 import Availability from "./pages/Availability";
 import Profile from "./pages/Profile";
 import Layout from "./components/Layout";
-import { Link } from "react-router-dom";
 import "./App.css";
 
 // Componente para rotas protegidas
@@ -30,28 +30,6 @@ const PrivateRoute = ({ children }) => {
 
   if (loading) return <div>A carregar...</div>;
   return isAuthenticated ? children : <Navigate to="/login" />;
-};
-
-const Dashboard = () => {
-  const { user } = useAuth();
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 max-w-2xl">
-        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-purple-600">
-          Olá, {user?.full_name?.split(" ")[0] || user?.email}! 👋
-        </h1>
-        <p className="mt-4 text-xl text-gray-500">
-          Bem-vindo ao painel de gestão da <strong>ATEC</strong>.
-        </p>
-        <div className="mt-8 p-4 bg-blue-50 rounded-lg text-blue-800 text-sm">
-          <p>
-            Usa a <strong>Barra Lateral</strong> à esquerda para navegar.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 function App() {
@@ -82,7 +60,10 @@ function App() {
             <Route path="/admin/classrooms" element={<AdminClassrooms />} />
             <Route path="/admin/availability" element={<AdminAvailability />} />
             <Route path="/admin/enrollments" element={<AdminEnrollments />} />
-            <Route path="/admin/module-grades" element={<AdminModuleGrades />} />
+            <Route
+              path="/admin/module-grades"
+              element={<AdminModuleGrades />}
+            />
             <Route path="/availability" element={<Availability />} />
           </Route>
         </Routes>

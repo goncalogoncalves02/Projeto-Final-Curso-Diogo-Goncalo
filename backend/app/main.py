@@ -15,6 +15,7 @@ from app.routers import (
     trainer_availability,
     enrollments,
     module_grades,
+    statistics,
 )
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -72,3 +73,4 @@ app.include_router(enrollments.router, prefix="/enrollments", tags=["enrollments
 app.include_router(
     module_grades.router, prefix="/module_grades", tags=["module_grades"]
 )
+app.include_router(statistics.router, prefix="/statistics", tags=["statistics"])
