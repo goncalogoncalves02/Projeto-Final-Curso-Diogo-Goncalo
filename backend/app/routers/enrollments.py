@@ -101,7 +101,7 @@ def update_enrollment(
     return enrollment
 
 
-@router.delete("/{enrollment_id}", response_model=Enrollment)
+@router.delete("/{enrollment_id}")
 def delete_enrollment(
     enrollment_id: int,
     db: Session = Depends(deps.get_db),
@@ -119,4 +119,4 @@ def delete_enrollment(
 
     db.delete(enrollment)
     db.commit()
-    return enrollment
+    return {"message": "Inscrição removida com sucesso", "id": enrollment_id}
