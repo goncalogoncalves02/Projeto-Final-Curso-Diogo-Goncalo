@@ -16,7 +16,11 @@ from app.routers import (
     enrollments,
     module_grades,
     statistics,
+    user_files,
 )
+
+from fastapi.staticfiles import StaticFiles
+import os
 
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -74,3 +78,9 @@ app.include_router(
     module_grades.router, prefix="/module_grades", tags=["module_grades"]
 )
 app.include_router(statistics.router, prefix="/statistics", tags=["statistics"])
+app.include_router(user_files.router, prefix="/users", tags=["user_files"])
+
+# Montar pasta de uploads como estática
+uploads_path = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(uploads_path, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
