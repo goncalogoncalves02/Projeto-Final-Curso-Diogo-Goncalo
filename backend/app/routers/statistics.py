@@ -45,11 +45,15 @@ def get_statistics(
         db.query(CourseModel).filter(CourseModel.status == CourseStatus.active).count()
     )
 
-    # iii. Total de formandos ativos (inscrições ativas)
+    # iii. Total de formandos ativos (utilizadores únicos com role='estudante' e inscrições ativas)
     students_active = (
-        db.query(EnrollmentModel)
-        .filter(EnrollmentModel.status == EnrollmentStatus.active)
-        .count()
+        db.query(func.count(func.distinct(EnrollmentModel.user_id)))
+        .join(UserModel, EnrollmentModel.user_id == UserModel.id)
+        .filter(
+            EnrollmentModel.status == EnrollmentStatus.active,
+            UserModel.role == "estudante",
+        )
+        .scalar()
     )
 
     # iv. Nº de cursos por área
