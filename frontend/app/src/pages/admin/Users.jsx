@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
+import UserFilesModal from "../../components/UserFilesModal";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -9,6 +10,7 @@ const AdminUsers = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [userFilesView, setUserFilesView] = useState(null); // { id, full_name }
 
   // Estados do form para editar
   const [formData, setFormData] = useState({
@@ -211,6 +213,17 @@ const AdminUsers = () => {
                     className="text-indigo-600 hover:text-indigo-900 mr-4"
                   >
                     Editar
+                  </button>
+                  <button
+                    onClick={() =>
+                      setUserFilesView({
+                        id: user.id,
+                        full_name: user.full_name || user.email,
+                      })
+                    }
+                    className="text-green-600 hover:text-green-900 mr-4"
+                  >
+                    Ficheiros
                   </button>
                   <button
                     onClick={() => handleDeleteClick(user)}
@@ -506,6 +519,15 @@ const AdminUsers = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Ficheiros */}
+      {userFilesView && (
+        <UserFilesModal
+          userId={userFilesView.id}
+          userName={userFilesView.full_name}
+          onClose={() => setUserFilesView(null)}
+        />
       )}
     </div>
   );

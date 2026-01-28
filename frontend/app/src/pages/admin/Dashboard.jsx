@@ -178,12 +178,12 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Formandos Ativos */}
+        {/* Estudantes Ativos */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">
-                Formandos Ativos
+                Estudantes Ativos
               </p>
               <p className="text-4xl font-bold text-gray-800 mt-2">
                 {stats?.students_active || 0}
