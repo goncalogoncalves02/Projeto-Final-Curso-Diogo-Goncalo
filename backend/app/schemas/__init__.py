@@ -11,3 +11,12 @@ from .trainer_availability import (
 from .enrollment import Enrollment, EnrollmentCreate, EnrollmentUpdate
 from .module_grade import ModuleGrade, ModuleGradeCreate, ModuleGradeUpdate
 from .course_module import CourseModule, CourseModuleCreate, CourseModuleUpdate
+from .lesson import (
+    Lesson,
+    LessonCreate,
+    LessonUpdate,
+    LessonWithDetails,
+    LessonConflictError,
+    LessonHoursInfo,
+    LessonCreateResponse,
+)

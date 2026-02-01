@@ -5,6 +5,7 @@ Endpoint para obter métricas agregadas do sistema para o Dashboard.
 """
 
 from typing import Any
+from datetime import date, datetime, time
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -13,9 +14,18 @@ from app.api import deps
 from app.models.course import Course as CourseModel, CourseStatus
 from app.models.enrollment import Enrollment as EnrollmentModel, EnrollmentStatus
 from app.models.course_module import CourseModule as CourseModuleModel
+from app.models.lesson import Lesson as LessonModel
 from app.models.user import User as UserModel
 
 router = APIRouter()
+
+
+def calculate_lesson_duration_hours(start_time: time, end_time: time) -> float:
+    """Calcula a duração de uma aula em horas."""
+    start_dt = datetime.combine(date.today(), start_time)
+    end_dt = datetime.combine(date.today(), end_time)
+    duration = (end_dt - start_dt).total_seconds() / 3600
+    return round(duration, 2)
 
 
 @router.get("/")
@@ -30,7 +40,7 @@ def get_statistics(
     ii. Total de cursos a decorrer
     iii. Total de formandos a frequentar cursos no atual momento
     iv. Nº de cursos por área
-    v. Top 10 de formadores com maior nº de horas lecionadas
+    v. Top 10 de formadores com maior nº de horas lecionadas (HORAS REAIS - aulas já dadas)
     """
 
     # i. Total de cursos terminados
@@ -65,29 +75,49 @@ def get_statistics(
 
     courses_by_area = {row.area: row.count for row in courses_by_area_query}
 
-    # v. Top 10 de formadores com maior nº de horas lecionadas
-    top_trainers_query = (
-        db.query(
-            UserModel.id,
-            UserModel.full_name,
-            UserModel.email,
-            func.sum(CourseModuleModel.total_hours).label("total_hours"),
-        )
-        .join(CourseModuleModel, CourseModuleModel.trainer_id == UserModel.id)
-        .group_by(UserModel.id, UserModel.full_name, UserModel.email)
-        .order_by(func.sum(CourseModuleModel.total_hours).desc())
-        .limit(10)
+    # v. Top 10 de formadores com maior nº de horas REALMENTE lecionadas
+    # Agora calculamos com base nas aulas (lessons) que já aconteceram (date <= hoje)
+    today = date.today()
+
+    # Obter todas as aulas passadas com os dados do módulo
+    past_lessons = (
+        db.query(LessonModel, CourseModuleModel)
+        .join(CourseModuleModel, LessonModel.course_module_id == CourseModuleModel.id)
+        .filter(LessonModel.date <= today)
         .all()
     )
 
-    top_trainers = [
-        {
-            "id": row.id,
-            "name": row.full_name or row.email,
-            "hours": row.total_hours or 0,
-        }
-        for row in top_trainers_query
-    ]
+    # Calcular horas por professor
+    trainer_hours = {}
+    for lesson, course_module in past_lessons:
+        trainer_id = course_module.trainer_id
+        hours = calculate_lesson_duration_hours(lesson.start_time, lesson.end_time)
+
+        if trainer_id not in trainer_hours:
+            trainer_hours[trainer_id] = 0.0
+        trainer_hours[trainer_id] += hours
+
+    # Obter dados dos professores e ordenar
+    top_trainers = []
+    if trainer_hours:
+        trainer_ids = list(trainer_hours.keys())
+        trainers = db.query(UserModel).filter(UserModel.id.in_(trainer_ids)).all()
+        trainer_map = {t.id: t for t in trainers}
+
+        sorted_trainers = sorted(
+            trainer_hours.items(), key=lambda x: x[1], reverse=True
+        )[:10]
+
+        for trainer_id, hours in sorted_trainers:
+            trainer = trainer_map.get(trainer_id)
+            if trainer:
+                top_trainers.append(
+                    {
+                        "id": trainer_id,
+                        "name": trainer.full_name or trainer.email,
+                        "hours": round(hours, 1),
+                    }
+                )
 
     return {
         "courses_finished": courses_finished,
