@@ -62,6 +62,10 @@ const ScheduleView = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Estado do calendário (controlado)
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState("week");
+
   // Verificar se é estudante
   const isStudent = user?.role === "estudante" && !user?.is_superuser;
 
@@ -409,12 +413,26 @@ const ScheduleView = () => {
             eventPropGetter={eventStyleGetter}
             messages={messages}
             culture="pt"
-            defaultView="week"
+            // Estados controlados para navegação funcionar
+            date={currentDate}
+            onNavigate={(date) => setCurrentDate(date)}
+            view={currentView}
+            onView={(view) => setCurrentView(view)}
             views={["month", "week", "day", "agenda"]}
+            // Formato 24h
+            formats={{
+              timeGutterFormat: "HH:mm",
+              eventTimeRangeFormat: ({ start, end }) =>
+                `${format(start, "HH:mm", { locale: pt })} - ${format(end, "HH:mm", { locale: pt })}`,
+              agendaTimeRangeFormat: ({ start, end }) =>
+                `${format(start, "HH:mm", { locale: pt })} - ${format(end, "HH:mm", { locale: pt })}`,
+              dayHeaderFormat: (date) =>
+                format(date, "EEEE, d MMMM", { locale: pt }),
+            }}
             step={30}
             timeslots={2}
-            min={new Date(2020, 0, 1, 8, 0)}
-            max={new Date(2020, 0, 1, 21, 0)}
+            min={new Date(2020, 0, 1, 7, 0)} // 07:00
+            max={new Date(2020, 0, 1, 23, 0)} // 23:00
             style={{ height: "calc(100% - 60px)" }}
             popup
           />
