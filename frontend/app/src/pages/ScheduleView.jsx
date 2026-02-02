@@ -4,9 +4,12 @@ import {
   format,
   parse,
   startOfWeek,
-  getDay,
+  endOfWeek,
   startOfMonth,
   endOfMonth,
+  startOfDay,
+  endOfDay,
+  getDay,
 } from "date-fns";
 import { pt } from "date-fns/locale";
 import api from "../api/axios";
@@ -45,12 +48,6 @@ const ScheduleView = () => {
   // Estado de consulta
   const [viewMode, setViewMode] = useState("course"); // course, trainer, classroom
   const [selectedId, setSelectedId] = useState("");
-  const [startDate, setStartDate] = useState(
-    format(startOfMonth(new Date()), "yyyy-MM-dd"),
-  );
-  const [endDate, setEndDate] = useState(
-    format(endOfMonth(new Date()), "yyyy-MM-dd"),
-  );
 
   // Dados de referência
   const [courses, setCourses] = useState([]);
@@ -66,52 +63,111 @@ const ScheduleView = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState("week");
 
-  // Verificar se é estudante
+  // Verificar perfil do utilizador
   const isStudent = user?.role === "estudante" && !user?.is_superuser;
+  const isProfessor = user?.role === "professor" && !user?.is_superuser;
+  const isAdmin = user?.is_superuser;
 
-  // Carregar dados de referência
+  // Para professores: marca se está a ver todas ou filtrado por turma
+  const [showingAll, setShowingAll] = useState(true);
+
+  // Carregar dados de referência e aulas iniciais
   useEffect(() => {
-    const loadReferenceData = async () => {
+    const loadData = async () => {
+      setLoading(true);
       try {
-        // Para estudantes, carregar primeiro as suas inscrições
-        let enrolledIds = [];
-        if (isStudent) {
+        // PROFESSOR: Carregar seus cursos e aulas automaticamente
+        if (isProfessor) {
+          const [myCoursesRes, myScheduleRes] = await Promise.all([
+            api.get("/lessons/my-courses"),
+            api.get("/lessons/my-schedule"),
+          ]);
+          setCourses(myCoursesRes.data);
+          setLessons(myScheduleRes.data);
+          setShowingAll(true);
+          // Professor não precisa de trainers e classrooms
+          setTrainers([]);
+          setClassrooms([]);
+        }
+        // ESTUDANTE: Carregar cursos inscritos
+        else if (isStudent) {
           const enrollmentsRes = await api.get("/enrollments/");
-          enrolledIds = enrollmentsRes.data
+          const enrolledIds = enrollmentsRes.data
             .filter((e) => e.status === "active")
             .map((e) => e.course_id);
-        }
 
-        const [coursesRes, usersRes, classroomsRes] = await Promise.all([
-          api.get("/courses/"),
-          api.get("/users/"),
-          api.get("/classrooms/"),
-        ]);
-
-        // Filtrar cursos para estudantes
-        if (isStudent) {
+          const coursesRes = await api.get("/courses/");
           const filteredCourses = coursesRes.data.filter((c) =>
             enrolledIds.includes(c.id),
           );
           setCourses(filteredCourses);
-        } else {
-          setCourses(coursesRes.data);
+          setTrainers([]);
+          setClassrooms([]);
         }
-
-        // Filtrar apenas professores
-        const profs = usersRes.data.filter((u) => u.role === "professor");
-        setTrainers(profs);
-        setClassrooms(classroomsRes.data);
+        // ADMIN: Carregar tudo
+        else if (isAdmin) {
+          const [coursesRes, usersRes, classroomsRes] = await Promise.all([
+            api.get("/courses/"),
+            api.get("/users/"),
+            api.get("/classrooms/"),
+          ]);
+          setCourses(coursesRes.data);
+          const profs = usersRes.data.filter((u) => u.role === "professor");
+          setTrainers(profs);
+          setClassrooms(classroomsRes.data);
+        }
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
+        setError(
+          "Erro ao carregar dados: " +
+            (err.response?.data?.detail || err.message),
+        );
+      } finally {
+        setLoading(false);
       }
     };
-    loadReferenceData();
-  }, [isStudent]);
+    loadData();
+  }, [isProfessor, isStudent, isAdmin]);
 
   // Carregar aulas quando filtros mudam
   useEffect(() => {
     const loadLessons = async () => {
+      // Para professor: se não tem turma selecionada, carregar todas
+      if (isProfessor) {
+        if (!selectedId) {
+          // Recarregar todas as aulas
+          try {
+            setLoading(true);
+            const res = await api.get("/lessons/my-schedule");
+            setLessons(res.data);
+            setShowingAll(true);
+          } catch (err) {
+            console.error("Erro ao carregar horário:", err);
+            setError("Erro ao carregar horário");
+          } finally {
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Filtrar por turma selecionada
+        try {
+          setLoading(true);
+          const res = await api.get(
+            `/lessons/my-schedule?course_id=${selectedId}`,
+          );
+          setLessons(res.data);
+          setShowingAll(false);
+        } catch (err) {
+          console.error("Erro ao carregar horário:", err);
+          setError("Erro ao carregar horário");
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Para estudante e admin: precisa de seleção
       if (!selectedId) {
         setLessons([]);
         return;
@@ -122,20 +178,16 @@ const ScheduleView = () => {
 
       try {
         let url = "";
-        const params = new URLSearchParams();
-
-        if (startDate) params.append("start_date", startDate);
-        if (endDate) params.append("end_date", endDate);
 
         switch (viewMode) {
           case "course":
-            url = `/lessons/by-course/${selectedId}?${params.toString()}`;
+            url = `/lessons/by-course/${selectedId}`;
             break;
           case "trainer":
-            url = `/lessons/by-trainer/${selectedId}?${params.toString()}`;
+            url = `/lessons/by-trainer/${selectedId}`;
             break;
           case "classroom":
-            url = `/lessons/by-classroom/${selectedId}?${params.toString()}`;
+            url = `/lessons/by-classroom/${selectedId}`;
             break;
           default:
             return;
@@ -154,7 +206,7 @@ const ScheduleView = () => {
     };
 
     loadLessons();
-  }, [viewMode, selectedId, startDate, endDate]);
+  }, [viewMode, selectedId, isProfessor]);
 
   // Converter lessons para eventos do calendário
   const events = useMemo(() => {
@@ -250,12 +302,18 @@ const ScheduleView = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
-          {isStudent ? "Meu Horário" : "Consultar Horários"}
+          {isProfessor
+            ? "O Meu Horário"
+            : isStudent
+              ? "Meu Horário"
+              : "Consultar Horários"}
         </h1>
         <p className="text-gray-600">
-          {isStudent
-            ? "Consulte o horário das turmas em que está inscrito."
-            : "Consulte os horários por turma, professor ou sala."}
+          {isProfessor
+            ? "Visualize todas as suas aulas e filtre por turma se necessário."
+            : isStudent
+              ? "Consulte o horário das turmas em que está inscrito."
+              : "Consulte os horários por turma, professor ou sala."}
         </p>
         {isStudent && courses.length === 0 && (
           <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700">
@@ -263,106 +321,127 @@ const ScheduleView = () => {
             Contacte a secretaria para efetuar a sua inscrição.
           </div>
         )}
+        {isProfessor && courses.length === 0 && !loading && (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700">
+            <strong>Atenção:</strong> Não tem módulos atribuídos. Contacte a
+            coordenação para verificar as suas atribuições.
+          </div>
+        )}
       </div>
 
       {/* Filtros */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Tipo de Consulta */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tipo de Consulta
-            </label>
-            <div className="flex rounded-lg overflow-hidden border border-gray-300">
-              <button
-                onClick={() => {
-                  setViewMode("course");
-                  setSelectedId("");
-                }}
-                className={`flex-1 px-3 py-2 text-sm font-medium transition ${
-                  viewMode === "course"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                Turma
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode("trainer");
-                  setSelectedId("");
-                }}
-                className={`flex-1 px-3 py-2 text-sm font-medium transition ${
-                  viewMode === "trainer"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                Formador
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode("classroom");
-                  setSelectedId("");
-                }}
-                className={`flex-1 px-3 py-2 text-sm font-medium transition ${
-                  viewMode === "classroom"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                Sala
-              </button>
+          {/* Tipo de Consulta - Apenas para Admin */}
+          {isAdmin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tipo de Consulta
+              </label>
+              <div className="flex rounded-lg overflow-hidden border border-gray-300">
+                <button
+                  onClick={() => {
+                    setViewMode("course");
+                    setSelectedId("");
+                  }}
+                  className={`flex-1 px-3 py-2 text-sm font-medium transition ${
+                    viewMode === "course"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Turma
+                </button>
+                <button
+                  onClick={() => {
+                    setViewMode("trainer");
+                    setSelectedId("");
+                  }}
+                  className={`flex-1 px-3 py-2 text-sm font-medium transition ${
+                    viewMode === "trainer"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Formador
+                </button>
+                <button
+                  onClick={() => {
+                    setViewMode("classroom");
+                    setSelectedId("");
+                  }}
+                  className={`flex-1 px-3 py-2 text-sm font-medium transition ${
+                    viewMode === "classroom"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Sala
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Seleção */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {viewMode === "course" && "Turma/Curso"}
-              {viewMode === "trainer" && "Professor"}
-              {viewMode === "classroom" && "Sala"}
-            </label>
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">{getPlaceholder()}</option>
-              {getSelectOptions().map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
+          {/* Seleção de Turma - Para Professor e Estudante (filtro opcional) */}
+          {(isProfessor || isStudent) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {isProfessor ? "Filtrar por Turma" : "Turma"}
+              </label>
+              <select
+                value={selectedId}
+                onChange={(e) => {
+                  setSelectedId(e.target.value);
+                  if (isProfessor) setShowingAll(e.target.value === "");
+                }}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">
+                  {isProfessor
+                    ? "Todas as minhas turmas"
+                    : "Selecionar turma..."}
                 </option>
-              ))}
-            </select>
-          </div>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Data Início */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              De
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Data Fim */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Até
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          {/* Seleção para Admin */}
+          {isAdmin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {viewMode === "course" && "Turma/Curso"}
+                {viewMode === "trainer" && "Professor"}
+                {viewMode === "classroom" && "Sala"}
+              </label>
+              <select
+                value={selectedId}
+                onChange={(e) => setSelectedId(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">{getPlaceholder()}</option>
+                {getSelectOptions().map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
+        {/* Indicador para Professor */}
+        {isProfessor && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-blue-700 text-sm">
+            {showingAll
+              ? "A mostrar todas as suas aulas. Use o filtro acima para ver apenas uma turma."
+              : `A filtrar por turma selecionada.`}
+          </div>
+        )}
       </div>
 
       {/* Mensagens */}
@@ -372,7 +451,7 @@ const ScheduleView = () => {
         </div>
       )}
 
-      {!selectedId && (
+      {!selectedId && !isProfessor && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700">
           Selecione uma opção acima para visualizar o horário.
         </div>
@@ -384,25 +463,63 @@ const ScheduleView = () => {
         </div>
       )}
 
-      {/* Calendário */}
-      {!loading && selectedId && (
+      {/* Calendário - Mostra sempre para professores, ou quando há seleção */}
+      {!loading && (selectedId || isProfessor) && (
         <div
           className="bg-white rounded-xl shadow-lg p-6"
           style={{ height: "70vh" }}
         >
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <span className="font-medium text-gray-700">
-              Total de aulas encontradas: {lessons.length}
-            </span>
-            {lessons.length > 0 && (
-              <span className="ml-4 text-gray-600">
-                Total de horas:{" "}
-                {lessons
-                  .reduce((sum, l) => sum + (l.duration_hours || 0), 0)
-                  .toFixed(1)}
-                h
-              </span>
-            )}
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg flex flex-wrap gap-4">
+            {/* Cálculos dinâmicos baseados na vista */}
+            {(() => {
+              // Calcular limites baseados na vista atual
+              let filteredLessons = lessons;
+              let periodLabel = "";
+
+              if (currentView === "month") {
+                const monthStart = startOfMonth(currentDate);
+                const monthEnd = endOfMonth(currentDate);
+                filteredLessons = lessons.filter((l) => {
+                  const lessonDate = new Date(l.date);
+                  return lessonDate >= monthStart && lessonDate <= monthEnd;
+                });
+                periodLabel = `(${format(currentDate, "MMMM yyyy", { locale: pt })})`;
+              } else if (currentView === "week") {
+                const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+                const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+                filteredLessons = lessons.filter((l) => {
+                  const lessonDate = new Date(l.date);
+                  return lessonDate >= weekStart && lessonDate <= weekEnd;
+                });
+                periodLabel = `(${format(weekStart, "d MMM", { locale: pt })} - ${format(weekEnd, "d MMM", { locale: pt })})`;
+              } else if (currentView === "day") {
+                const dayStart = startOfDay(currentDate);
+                const dayEnd = endOfDay(currentDate);
+                filteredLessons = lessons.filter((l) => {
+                  const lessonDate = new Date(l.date);
+                  return lessonDate >= dayStart && lessonDate <= dayEnd;
+                });
+                periodLabel = `(${format(currentDate, "d MMMM yyyy", { locale: pt })})`;
+              } else {
+                // Agenda - mostra total
+                periodLabel = "(Total)";
+              }
+
+              const totalHours = filteredLessons
+                .reduce((sum, l) => sum + (l.duration_hours || 0), 0)
+                .toFixed(1);
+
+              return (
+                <>
+                  <span className="font-medium text-gray-700">
+                    Aulas: {filteredLessons.length} {periodLabel}
+                  </span>
+                  {filteredLessons.length > 0 && (
+                    <span className="text-gray-600">Horas: {totalHours}h</span>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           <Calendar

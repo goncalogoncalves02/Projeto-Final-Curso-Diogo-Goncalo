@@ -468,6 +468,85 @@ def delete_lesson(
 # ============================================
 
 
+@router.get("/my-schedule", response_model=List[LessonWithDetails])
+def get_my_schedule(
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(deps.get_current_active_user),
+    course_id: Optional[int] = Query(None, description="Filtrar por curso específico"),
+    start_date: Optional[date] = Query(None, description="Filtrar a partir desta data"),
+    end_date: Optional[date] = Query(None, description="Filtrar até esta data"),
+):
+    """
+    Retorna todas as aulas do professor autenticado.
+    Usado para o calendário personalizado do professor.
+    """
+    # Verificar se é professor
+    if current_user.role != "professor" and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, detail="Este endpoint é apenas para professores"
+        )
+
+    # Obter todos os módulos onde o user é trainer
+    query = db.query(CourseModuleModel).filter(
+        CourseModuleModel.trainer_id == current_user.id
+    )
+
+    # Se filtrar por curso, aplicar
+    if course_id:
+        query = query.filter(CourseModuleModel.course_id == course_id)
+
+    course_modules = query.all()
+
+    if not course_modules:
+        return []
+
+    module_ids = [cm.id for cm in course_modules]
+
+    # Obter todas as aulas desses módulos
+    lesson_query = db.query(LessonModel).filter(
+        LessonModel.course_module_id.in_(module_ids)
+    )
+
+    if start_date:
+        lesson_query = lesson_query.filter(LessonModel.date >= start_date)
+    if end_date:
+        lesson_query = lesson_query.filter(LessonModel.date <= end_date)
+
+    lesson_query = lesson_query.order_by(LessonModel.date, LessonModel.start_time)
+    lessons = lesson_query.all()
+
+    return [build_lesson_with_details(db, lesson) for lesson in lessons]
+
+
+@router.get("/my-courses")
+def get_my_courses(
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(deps.get_current_active_user),
+):
+    """
+    Retorna os cursos onde o professor leciona.
+    Usado para preencher o filtro de turmas do professor.
+    """
+    # Verificar se é professor
+    if current_user.role != "professor" and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, detail="Este endpoint é apenas para professores"
+        )
+
+    # Obter cursos distintos dos módulos do professor
+    course_modules = (
+        db.query(CourseModuleModel)
+        .filter(CourseModuleModel.trainer_id == current_user.id)
+        .all()
+    )
+
+    course_ids = set(cm.course_id for cm in course_modules)
+
+    courses = db.query(CourseModel).filter(CourseModel.id.in_(course_ids)).all()
+
+    return [{"id": c.id, "name": c.name} for c in courses]
+
+
 @router.get("/by-course/{course_id}", response_model=List[LessonWithDetails])
 def get_lessons_by_course(
     course_id: int,

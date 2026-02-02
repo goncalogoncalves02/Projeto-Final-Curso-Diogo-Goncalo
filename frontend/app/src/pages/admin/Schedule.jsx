@@ -460,30 +460,52 @@ const Schedule = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Hora Início *
               </label>
-              <input
-                type="time"
+              <select
                 value={formData.start_time}
                 onChange={(e) =>
                   setFormData({ ...formData, start_time: e.target.value })
                 }
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
-              />
+              >
+                <option value="">Selecionar...</option>
+                {Array.from({ length: 33 }, (_, i) => {
+                  const hour = Math.floor(i / 2) + 7;
+                  const minute = (i % 2) * 30;
+                  const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+                  return (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  );
+                })}
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Hora Fim *
               </label>
-              <input
-                type="time"
+              <select
                 value={formData.end_time}
                 onChange={(e) =>
                   setFormData({ ...formData, end_time: e.target.value })
                 }
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
-              />
+              >
+                <option value="">Selecionar...</option>
+                {Array.from({ length: 33 }, (_, i) => {
+                  const hour = Math.floor(i / 2) + 7;
+                  const minute = (i % 2) * 30;
+                  const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+                  return (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  );
+                })}
+              </select>
             </div>
           </div>
 
