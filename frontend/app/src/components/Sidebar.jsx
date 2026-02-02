@@ -1,6 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LayoutDashboard, Users, LogOut, Settings, BookOpen, Layers, Monitor, Calendar } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  LogOut,
+  Settings,
+  BookOpen,
+  Layers,
+  Monitor,
+  Calendar,
+  Clock,
+  Search,
+} from "lucide-react";
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
@@ -36,7 +47,7 @@ const Sidebar = () => {
             <div className="px-4 pt-4 pb-2 text-xs font-semibold text-blue-300 uppercase tracking-wider">
               Administração
             </div>
-            
+
             <Link
               to="/admin/users"
               className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive("/admin/users")}`}
@@ -97,10 +108,18 @@ const Sidebar = () => {
               <BookOpen className="w-5 h-5 mr-3" />
               <span className="font-medium">Notas</span>
             </Link>
+
+            <Link
+              to="/admin/schedule"
+              className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive("/admin/schedule")}`}
+            >
+              <Clock className="w-5 h-5 mr-3" />
+              <span className="font-medium">Gestão de Horários</span>
+            </Link>
           </>
         )}
 
-        {(user?.role === 'professor' || user?.is_superuser) && (
+        {(user?.role === "professor" || user?.is_superuser) && (
           <Link
             to="/availability"
             className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive("/availability")}`}
@@ -109,7 +128,20 @@ const Sidebar = () => {
             <span className="font-medium">Disponibilidade</span>
           </Link>
         )}
-        
+
+        {/* Link de Consultar Horários - Disponível para todos */}
+        <Link
+          to="/schedule"
+          className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive("/schedule")}`}
+        >
+          <Search className="w-5 h-5 mr-3" />
+          <span className="font-medium">
+            {user?.role === "estudante" && !user?.is_superuser
+              ? "Meu Horário"
+              : "Consultar Horários"}
+          </span>
+        </Link>
+
         <Link
           to="/profile"
           className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${isActive("/profile")}`}

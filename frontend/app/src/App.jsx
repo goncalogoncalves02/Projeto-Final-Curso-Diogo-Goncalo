@@ -18,8 +18,10 @@ import AdminClassrooms from "./pages/admin/Classrooms";
 import AdminAvailability from "./pages/admin/AdminAvailability";
 import AdminEnrollments from "./pages/admin/Enrollments";
 import AdminModuleGrades from "./pages/admin/ModuleGrades";
+import AdminSchedule from "./pages/admin/Schedule";
 import Dashboard from "./pages/admin/Dashboard";
 import Availability from "./pages/Availability";
+import ScheduleView from "./pages/ScheduleView";
 import Profile from "./pages/Profile";
 import Layout from "./components/Layout";
 import "./App.css";
@@ -64,7 +66,9 @@ function App() {
               path="/admin/module-grades"
               element={<AdminModuleGrades />}
             />
+            <Route path="/admin/schedule" element={<AdminSchedule />} />
             <Route path="/availability" element={<Availability />} />
+            <Route path="/schedule" element={<ScheduleView />} />
           </Route>
         </Routes>
       </Router>
