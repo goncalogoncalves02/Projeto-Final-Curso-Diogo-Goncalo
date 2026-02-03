@@ -1,5 +1,6 @@
 # Dependências do Backend FastAPI
 # ================================
+# Verificado em 03/02/2026 contra todos os imports do projeto
 
 # Framework Web
 fastapi
@@ -7,11 +8,10 @@ uvicorn[standard]
 
 # Base de Dados
 sqlalchemy
-aiosqlite
 
 # Autenticação e Segurança
-passlib[bcrypt]
-bcrypt
+passlib[argon2]
+argon2-cffi
 python-jose[cryptography]
 python-multipart
 
@@ -26,7 +26,9 @@ itsdangerous
 
 # Configuração
 python-dotenv
-pydantic-settings
 
-# Migrations (opcional, mas útil)
+# Migrations
 alembic
+
+# Pydantic (incluído com fastapi, mas explícito para clareza)
+pydantic
