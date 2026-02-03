@@ -116,7 +116,7 @@ const Dashboard = () => {
     ],
   };
 
-  // Dados para Top Formadores
+  // Dados para Top Professores
   const topTrainersData = {
     labels:
       stats?.top_trainers?.map((t) => t.name?.split(" ")[0] || "N/A") || [],
@@ -223,11 +223,11 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Top 10 Formadores */}
+        {/* Top 10 Professores */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <Trophy className="w-5 h-5 text-yellow-500 mr-2" />
-            Top 10 Formadores (Horas)
+            Top 10 Professores (Horas)
           </h2>
           <div className="h-64">
             {stats?.top_trainers?.length > 0 ? (
@@ -251,18 +251,18 @@ const Dashboard = () => {
               />
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className="text-gray-400">Sem dados de formadores</p>
+                <p className="text-gray-400">Sem dados de professores</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Tabela Top Formadores Detalhada */}
+      {/* Tabela Top Professores Detalhada */}
       {stats?.top_trainers?.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Detalhes dos Formadores
+            Detalhes dos Professores
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full">

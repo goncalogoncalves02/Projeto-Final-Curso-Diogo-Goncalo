@@ -260,7 +260,7 @@ const AdminSearch = () => {
                     : "bg-white text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                Formadores
+                Professores
               </button>
             </div>
           </div>

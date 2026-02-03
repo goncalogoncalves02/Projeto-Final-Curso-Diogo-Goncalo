@@ -40,7 +40,7 @@ def get_statistics(
     ii. Total de cursos a decorrer
     iii. Total de formandos a frequentar cursos no atual momento
     iv. Nº de cursos por área
-    v. Top 10 de formadores com maior nº de horas lecionadas (HORAS REAIS - aulas já dadas)
+    v. Top 10 de professores com maior nº de horas lecionadas (HORAS REAIS - aulas já dadas)
     """
 
     # i. Total de cursos terminados
@@ -75,7 +75,7 @@ def get_statistics(
 
     courses_by_area = {row.area: row.count for row in courses_by_area_query}
 
-    # v. Top 10 de formadores com maior nº de horas REALMENTE lecionadas
+    # v. Top 10 de professores com maior nº de horas REALMENTE lecionadas
     # Agora calculamos com base nas aulas (lessons) que já aconteceram (date <= hoje)
     today = date.today()
 

@@ -1,6 +1,6 @@
 """
 Router de Pesquisa - Admin e Secretaria
-Permite pesquisar cursos, estudantes e formadores.
+Permite pesquisar cursos, estudantes e professores.
 """
 
 from typing import List
@@ -79,7 +79,7 @@ def search_trainers(
     current_user: User = Depends(deps.get_current_admin_or_secretaria),
 ):
     """
-    Pesquisa formadores por nome ou email.
+    Pesquisa professores por nome ou email.
     Apenas Admin e Secretaria.
     """
     search_term = f"%{q}%"
