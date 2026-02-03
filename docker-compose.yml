@@ -26,6 +26,8 @@ services:
       - SECRET_KEY=${SECRET_KEY:-supersecretkey123}
       # Usa a BD local (não volume Docker)
       - DATABASE_URL=sqlite:///./sql_app.db
+      # Hot reload no Windows (polling necessário)
+      - WATCHFILES_FORCE_POLLING=true
       - MAIL_USERNAME=${MAIL_USERNAME:-}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
       - MAIL_FROM=${MAIL_FROM:-}
@@ -55,6 +57,9 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000
+      # Hot reload no Windows (polling necessário)
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
     restart: unless-stopped
