@@ -2,9 +2,9 @@ from typing import List, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models.classroom import Classroom as ClassroomModel
 from app.schemas.classroom import Classroom, ClassroomCreate, ClassroomUpdate
 from app.api import deps
+from app.crud import classroom as classroom_crud
 
 router = APIRouter()
 
@@ -19,8 +19,7 @@ def read_classrooms(
     """
     Lista todas as salas.
     """
-    classrooms = db.query(ClassroomModel).offset(skip).limit(limit).all()
-    return classrooms
+    return classroom_crud.get_multi(db, skip=skip, limit=limit)
 
 
 @router.post("/", response_model=Classroom)
@@ -33,16 +32,7 @@ def create_classroom(
     """
     Cria uma nova sala (Apenas Admin).
     """
-    classroom = ClassroomModel(
-        name=classroom_in.name,
-        type=classroom_in.type,
-        capacity=classroom_in.capacity,
-        is_available=classroom_in.is_available,
-    )
-    db.add(classroom)
-    db.commit()
-    db.refresh(classroom)
-    return classroom
+    return classroom_crud.create(db, obj_in=classroom_in)
 
 
 @router.put("/{classroom_id}", response_model=Classroom)
@@ -56,20 +46,11 @@ def update_classroom(
     """
     Atualiza uma sala (Apenas Admin).
     """
-    classroom = (
-        db.query(ClassroomModel).filter(ClassroomModel.id == classroom_id).first()
-    )
+    classroom = classroom_crud.get(db, id=classroom_id)
     if not classroom:
         raise HTTPException(status_code=404, detail="Classroom not found")
 
-    update_data = classroom_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(classroom, field, value)
-
-    db.add(classroom)
-    db.commit()
-    db.refresh(classroom)
-    return classroom
+    return classroom_crud.update(db, db_obj=classroom, obj_in=classroom_in)
 
 
 @router.delete("/{classroom_id}", response_model=Classroom)
@@ -82,12 +63,8 @@ def delete_classroom(
     """
     Remove uma sala (Apenas Admin).
     """
-    classroom = (
-        db.query(ClassroomModel).filter(ClassroomModel.id == classroom_id).first()
-    )
+    classroom = classroom_crud.get(db, id=classroom_id)
     if not classroom:
         raise HTTPException(status_code=404, detail="Classroom not found")
 
-    db.delete(classroom)
-    db.commit()
-    return classroom
+    return classroom_crud.remove(db, id=classroom_id)

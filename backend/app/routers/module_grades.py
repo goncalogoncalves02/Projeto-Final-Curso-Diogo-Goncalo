@@ -2,9 +2,9 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.api import deps
-from app.models.module_grade import ModuleGrade as ModuleGradeModel
 from app.schemas import ModuleGrade, ModuleGradeCreate, ModuleGradeUpdate
 from app.models.user import User
+from app.crud import module_grade as module_grade_crud
 
 router = APIRouter()
 
@@ -23,50 +23,33 @@ def read_module_grades(
     - Admin vê tudo ou filtra.
     - Aluno vê apenas as suas.
     """
-    query = db.query(ModuleGradeModel)
-
     if current_user.is_superuser:
-        if enrollment_id:
-            query = query.filter(ModuleGradeModel.enrollment_id == enrollment_id)
-        if course_module_id:
-            query = query.filter(ModuleGradeModel.course_module_id == course_module_id)
-        return query.offset(skip).limit(limit).all()
+        return module_grade_crud.get_multi_filtered(
+            db,
+            enrollment_id=enrollment_id,
+            course_module_id=course_module_id,
+            skip=skip,
+            limit=limit,
+        )
 
     # Se for aluno, filtrar apenas pelas suas inscrições
-    # Isso requer um join com Enrollment para verificar o user_id
-    from app.models.enrollment import Enrollment
-
-    return (
-        query.join(Enrollment)
-        .filter(Enrollment.user_id == current_user.id)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    return module_grade_crud.get_by_user(db, user_id=current_user.id, skip=skip, limit=limit)
 
 
 @router.post("/", response_model=ModuleGrade)
 def create_module_grade(
     grade_in: ModuleGradeCreate,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(
-        deps.get_current_active_superuser
-    ),  # Apenas admin lança notas por enquanto
+    current_user: User = Depends(deps.get_current_active_superuser),
 ):
     """
     Lança uma nota para um aluno num módulo. (Admin Only)
     """
-    # Verificar duplicados? Um aluno pode ter múltiplas notas num módulo?
-    # Vamos assumir que sim (ex: teste 1, teste 2), ou se for nota final, apenas uma.
-    # O modelo atual não especifica tipo de avaliação, portanto assumimos 1 nota final por módulo por agora.
-
-    existing = (
-        db.query(ModuleGradeModel)
-        .filter(
-            ModuleGradeModel.enrollment_id == grade_in.enrollment_id,
-            ModuleGradeModel.course_module_id == grade_in.course_module_id,
-        )
-        .first()
+    # Verificar duplicados
+    existing = module_grade_crud.get_by_enrollment_and_module(
+        db,
+        enrollment_id=grade_in.enrollment_id,
+        course_module_id=grade_in.course_module_id,
     )
     if existing:
         raise HTTPException(
@@ -74,11 +57,7 @@ def create_module_grade(
             detail="Já existe uma nota lançada para este módulo e aluno. Atualize a existente.",
         )
 
-    grade = ModuleGradeModel(**grade_in.model_dump())
-    db.add(grade)
-    db.commit()
-    db.refresh(grade)
-    return grade
+    return module_grade_crud.create(db, obj_in=grade_in)
 
 
 @router.put("/{grade_id}", response_model=ModuleGrade)
@@ -91,18 +70,11 @@ def update_module_grade(
     """
     Atualiza uma nota existente.
     """
-    grade = db.query(ModuleGradeModel).filter(ModuleGradeModel.id == grade_id).first()
+    grade = module_grade_crud.get(db, id=grade_id)
     if not grade:
         raise HTTPException(status_code=404, detail="Nota não encontrada")
 
-    update_data = grade_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(grade, field, value)
-
-    db.add(grade)
-    db.commit()
-    db.refresh(grade)
-    return grade
+    return module_grade_crud.update(db, db_obj=grade, obj_in=grade_in)
 
 
 @router.delete("/{grade_id}", response_model=ModuleGrade)
@@ -114,10 +86,8 @@ def delete_module_grade(
     """
     Remove uma nota.
     """
-    grade = db.query(ModuleGradeModel).filter(ModuleGradeModel.id == grade_id).first()
+    grade = module_grade_crud.get(db, id=grade_id)
     if not grade:
         raise HTTPException(status_code=404, detail="Nota não encontrada")
 
-    db.delete(grade)
-    db.commit()
-    return grade
+    return module_grade_crud.remove(db, id=grade_id)

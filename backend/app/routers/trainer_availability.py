@@ -2,15 +2,13 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.api import deps
-from app.models.trainer_availability import (
-    TrainerAvailability as TrainerAvailabilityModel,
-)
 from app.schemas import (
     TrainerAvailability,
     TrainerAvailabilityCreate,
     TrainerAvailabilityUpdate,
 )
 from app.models.user import User
+from app.crud import trainer_availability as availability_crud
 
 router = APIRouter()
 
@@ -30,19 +28,22 @@ def read_availabilities(
     - Se for Professor, vê apenas as suas.
     - Se my_only=True, Admin vê apenas as suas próprias.
     """
-    query = db.query(TrainerAvailabilityModel)
-
     if current_user.is_superuser:
         if my_only:
             # Admin quer ver apenas as suas próprias
-            query = query.filter(TrainerAvailabilityModel.trainer_id == current_user.id)
+            return availability_crud.get_by_trainer(
+                db, trainer_id=current_user.id, skip=skip, limit=limit
+            )
         elif trainer_id:
-            query = query.filter(TrainerAvailabilityModel.trainer_id == trainer_id)
-    else:
-        query = query.filter(TrainerAvailabilityModel.trainer_id == current_user.id)
+            return availability_crud.get_by_trainer(
+                db, trainer_id=trainer_id, skip=skip, limit=limit
+            )
+        return availability_crud.get_multi(db, skip=skip, limit=limit)
 
-    availabilities = query.offset(skip).limit(limit).all()
-    return availabilities
+    # Se não for admin, retorna apenas as suas
+    return availability_crud.get_by_trainer(
+        db, trainer_id=current_user.id, skip=skip, limit=limit
+    )
 
 
 @router.post("/", response_model=TrainerAvailability)
@@ -54,15 +55,9 @@ def create_availability(
     """
     Cria uma nova disponibilidade para o utilizador atual.
     """
-    # Validar lógica (ex: data específica vs dia da semana) - Opcional por agora
-
-    availability = TrainerAvailabilityModel(
-        **availability_in.model_dump(), trainer_id=current_user.id
+    return availability_crud.create_for_trainer(
+        db, trainer_id=current_user.id, obj_in=availability_in
     )
-    db.add(availability)
-    db.commit()
-    db.refresh(availability)
-    return availability
 
 
 @router.delete("/{availability_id}", response_model=TrainerAvailability)
@@ -75,11 +70,7 @@ def delete_availability(
     Apaga uma disponibilidade.
     Apenas o próprio dono ou um Admin pode apagar.
     """
-    availability = (
-        db.query(TrainerAvailabilityModel)
-        .filter(TrainerAvailabilityModel.id == availability_id)
-        .first()
-    )
+    availability = availability_crud.get(db, id=availability_id)
 
     if not availability:
         raise HTTPException(
@@ -93,6 +84,4 @@ def delete_availability(
             detail="Não tem permissão para apagar esta disponibilidade",
         )
 
-    db.delete(availability)
-    db.commit()
-    return availability
+    return availability_crud.remove(db, id=availability_id)

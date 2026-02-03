@@ -6,15 +6,17 @@ Endpoints para upload, listagem, download e eliminação de ficheiros.
 
 import os
 import shutil
+import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.api import deps
-from app.models.user_files import UserFile as UserFileModel
 from app.models.user import User
 from app.schemas.user_file import UserFile
+from app.crud import user_file as user_file_crud
+from app.crud import user as user_crud
 
 router = APIRouter()
 
@@ -33,8 +35,7 @@ def list_user_files(
     """
     Lista todos os ficheiros de um utilizador. (Admin Only)
     """
-    files = db.query(UserFileModel).filter(UserFileModel.user_id == user_id).all()
-    return files
+    return user_file_crud.get_by_user(db, user_id=user_id)
 
 
 @router.post("/{user_id}/files", response_model=UserFile)
@@ -48,7 +49,7 @@ async def upload_user_file(
     Faz upload de um ficheiro para o utilizador. (Admin Only)
     """
     # Verificar se utilizador existe
-    user = db.query(User).filter(User.id == user_id).first()
+    user = user_crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado")
 
@@ -57,8 +58,6 @@ async def upload_user_file(
     os.makedirs(user_folder, exist_ok=True)
 
     # Gerar nome único para evitar colisões
-    import uuid
-
     file_ext = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4().hex}{file_ext}"
     file_path = os.path.join(user_folder, unique_filename)
@@ -72,18 +71,14 @@ async def upload_user_file(
             status_code=500, detail=f"Erro ao guardar ficheiro: {str(e)}"
         )
 
-    # Criar registo na BD
-    db_file = UserFileModel(
+    # Criar registo na BD usando o CRUD
+    return user_file_crud.create_for_user(
+        db,
         user_id=user_id,
         filename=file.filename,
         file_path=f"uploads/users/{user_id}/{unique_filename}",
         file_type=file.content_type or file_ext.lstrip("."),
     )
-    db.add(db_file)
-    db.commit()
-    db.refresh(db_file)
-
-    return db_file
 
 
 @router.get("/{user_id}/files/{file_id}/download")
@@ -96,11 +91,7 @@ def download_user_file(
     """
     Download de um ficheiro. (Admin Only)
     """
-    db_file = (
-        db.query(UserFileModel)
-        .filter(UserFileModel.id == file_id, UserFileModel.user_id == user_id)
-        .first()
-    )
+    db_file = user_file_crud.get_by_user_and_id(db, user_id=user_id, file_id=file_id)
 
     if not db_file:
         raise HTTPException(status_code=404, detail="Ficheiro não encontrado")
@@ -132,11 +123,7 @@ def delete_user_file(
     """
     Elimina um ficheiro do utilizador. (Admin Only)
     """
-    db_file = (
-        db.query(UserFileModel)
-        .filter(UserFileModel.id == file_id, UserFileModel.user_id == user_id)
-        .first()
-    )
+    db_file = user_file_crud.get_by_user_and_id(db, user_id=user_id, file_id=file_id)
 
     if not db_file:
         raise HTTPException(status_code=404, detail="Ficheiro não encontrado")
@@ -148,8 +135,5 @@ def delete_user_file(
     if os.path.exists(file_path):
         os.remove(file_path)
 
-    # Eliminar registo da BD
-    db.delete(db_file)
-    db.commit()
-
-    return db_file
+    # Eliminar registo da BD usando o CRUD
+    return user_file_crud.remove(db, id=file_id)

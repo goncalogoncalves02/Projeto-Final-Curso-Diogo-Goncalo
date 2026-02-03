@@ -2,9 +2,9 @@ from typing import List, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models.module import Module as ModuleModel
 from app.schemas.module import Module, ModuleCreate, ModuleUpdate
 from app.api import deps
+from app.crud import module as module_crud
 
 router = APIRouter()
 
@@ -19,8 +19,7 @@ def read_modules(
     """
     Lista todos os módulos (biblioteca de UCs).
     """
-    modules = db.query(ModuleModel).offset(skip).limit(limit).all()
-    return modules
+    return module_crud.get_multi(db, skip=skip, limit=limit)
 
 
 @router.post("/", response_model=Module)
@@ -33,15 +32,7 @@ def create_module(
     """
     Cria um novo módulo (Apenas Admin).
     """
-    module = ModuleModel(
-        name=module_in.name,
-        area=module_in.area,
-        default_duration_hours=module_in.default_duration_hours,
-    )
-    db.add(module)
-    db.commit()
-    db.refresh(module)
-    return module
+    return module_crud.create(db, obj_in=module_in)
 
 
 @router.put("/{module_id}", response_model=Module)
@@ -55,18 +46,11 @@ def update_module(
     """
     Atualiza um módulo (Apenas Admin).
     """
-    module = db.query(ModuleModel).filter(ModuleModel.id == module_id).first()
+    module = module_crud.get(db, id=module_id)
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
 
-    update_data = module_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(module, field, value)
-
-    db.add(module)
-    db.commit()
-    db.refresh(module)
-    return module
+    return module_crud.update(db, db_obj=module, obj_in=module_in)
 
 
 @router.delete("/{module_id}", response_model=Module)
@@ -79,10 +63,8 @@ def delete_module(
     """
     Remove um módulo (Apenas Admin).
     """
-    module = db.query(ModuleModel).filter(ModuleModel.id == module_id).first()
+    module = module_crud.get(db, id=module_id)
     if not module:
         raise HTTPException(status_code=404, detail="Module not found")
 
-    db.delete(module)
-    db.commit()
-    return module
+    return module_crud.remove(db, id=module_id)
