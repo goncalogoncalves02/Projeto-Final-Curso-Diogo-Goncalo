@@ -1,6 +1,10 @@
+from contextlib import asynccontextmanager
+import asyncio
+import logging
+
 from fastapi import FastAPI
 from app.db.base import Base
-from app.db.session import engine
+from app.db.session import engine, SessionLocal
 from app import (
     models,
 )  # Importar todos os modelos para garantir que são criados (via __init__.py)
@@ -28,15 +32,63 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import settings
 
-app = FastAPI(
-    title="ATEC Gestão Escolar API",
-    description="API para gestão de escola com autenticação avançada",
-    version="1.0.0",
+# Serviço de atualização automática de status dos cursos
+from app.services.course_status_updater import (
+    update_course_statuses,
+    course_status_scheduler,
 )
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Cria as tabelas na base de dados (caso não existam)
 # Em produção, usaremos Alembic para migrações, mas aqui o create_all serve
 Base.metadata.create_all(bind=engine)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager para inicialização e limpeza da aplicação.
+    - Startup: Atualiza status dos cursos e inicia scheduler
+    - Shutdown: Cancela o scheduler
+    """
+    # === STARTUP ===
+    logger.info("A iniciar aplicação...")
+
+    # Atualizar status dos cursos imediatamente ao iniciar
+    db = SessionLocal()
+    try:
+        result = update_course_statuses(db)
+        if result["to_active"] or result["to_finished"]:
+            logger.info(
+                f"Status de cursos atualizado no startup: "
+                f"{result['to_active']} -> active, {result['to_finished']} -> finished"
+            )
+    finally:
+        db.close()
+
+    # Iniciar scheduler em background (verifica a cada 60 minutos)
+    scheduler_task = asyncio.create_task(course_status_scheduler(interval_minutes=60))
+
+    yield  # Aplicação a correr
+
+    # === SHUTDOWN ===
+    logger.info("A encerrar aplicação...")
+    scheduler_task.cancel()
+    try:
+        await scheduler_task
+    except asyncio.CancelledError:
+        pass
+
+
+app = FastAPI(
+    title="ATEC Gestão Escolar API",
+    description="API para gestão de escola com autenticação avançada",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 # Session Middleware é necessário para o OAuth (gerir estados)
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)

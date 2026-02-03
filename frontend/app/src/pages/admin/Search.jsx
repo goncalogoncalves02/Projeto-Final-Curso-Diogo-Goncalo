@@ -177,20 +177,24 @@ const AdminSearch = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                     ${
                       course.status === "active"
                         ? "bg-green-100 text-green-800"
                         : course.status === "planned"
                           ? "bg-yellow-100 text-yellow-800"
-                          : "bg-gray-100 text-gray-800"
+                          : course.status === "cancelled"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
                     }`}
                   >
                     {course.status === "active"
                       ? "Ativo"
                       : course.status === "planned"
                         ? "Planeado"
-                        : "Terminado"}
+                        : course.status === "cancelled"
+                          ? "Cancelado"
+                          : "Terminado"}
                   </span>
                 </td>
               </tr>

@@ -12,7 +12,14 @@ import {
   BarElement,
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
-import { GraduationCap, BookCheck, Users, Trophy } from "lucide-react";
+import {
+  GraduationCap,
+  BookCheck,
+  Users,
+  Trophy,
+  Calendar,
+  Clock,
+} from "lucide-react";
 
 ChartJS.register(
   ArcElement,
@@ -30,6 +37,10 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Verifica se é admin ou secretaria
+  const canViewFullDashboard =
+    user?.is_superuser || user?.role === "admin" || user?.role === "secretaria";
+
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
@@ -46,15 +57,15 @@ const Dashboard = () => {
 
   // Carregar dados quando a página é montada ou quando navega para ela
   useEffect(() => {
-    if (user?.is_superuser) {
+    if (canViewFullDashboard) {
       fetchStats();
     } else {
       setLoading(false);
     }
-  }, [user, location.key, fetchStats]);
+  }, [user, location.key, fetchStats, canViewFullDashboard]);
 
-  // Se não é admin, mostra dashboard simples
-  if (!user?.is_superuser) {
+  // Se não é admin ou secretaria, mostra dashboard simples
+  if (!canViewFullDashboard) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
         <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 max-w-2xl">
@@ -192,6 +203,110 @@ const Dashboard = () => {
             <div className="p-4 bg-purple-100 rounded-xl">
               <Users className="w-8 h-8 text-purple-600" />
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Course Lists Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Cursos a Decorrer - Lista */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <GraduationCap className="w-5 h-5 text-blue-500 mr-2" />
+            Cursos a Decorrer
+          </h2>
+          <div className="overflow-x-auto max-h-64 overflow-y-auto">
+            {stats?.courses_running?.length > 0 ? (
+              <table className="w-full">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
+                      Curso
+                    </th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
+                      Área
+                    </th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
+                      Período
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.courses_running.map((course) => (
+                    <tr
+                      key={course.id}
+                      className="border-b border-gray-50 hover:bg-gray-50"
+                    >
+                      <td className="py-2 px-3 font-medium text-gray-800 text-sm">
+                        {course.name}
+                      </td>
+                      <td className="py-2 px-3 text-gray-600 text-sm">
+                        {course.area || "-"}
+                      </td>
+                      <td className="py-2 px-3 text-gray-500 text-xs">
+                        {course.start_date} → {course.end_date || "..."}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-gray-400 text-center py-4">
+                Nenhum curso a decorrer
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Cursos a Iniciar - Lista */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <Calendar className="w-5 h-5 text-orange-500 mr-2" />
+            Cursos a Iniciar (60 dias)
+          </h2>
+          <div className="overflow-x-auto max-h-64 overflow-y-auto">
+            {stats?.courses_starting_soon?.length > 0 ? (
+              <table className="w-full">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
+                      Curso
+                    </th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
+                      Área
+                    </th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
+                      Início
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.courses_starting_soon.map((course) => (
+                    <tr
+                      key={course.id}
+                      className="border-b border-gray-50 hover:bg-gray-50"
+                    >
+                      <td className="py-2 px-3 font-medium text-gray-800 text-sm">
+                        {course.name}
+                      </td>
+                      <td className="py-2 px-3 text-gray-600 text-sm">
+                        {course.area || "-"}
+                      </td>
+                      <td className="py-2 px-3">
+                        <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {course.days_until_start} dias
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-gray-400 text-center py-4">
+                Nenhum curso a iniciar nos próximos 60 dias
+              </p>
+            )}
           </div>
         </div>
       </div>
