@@ -79,3 +79,18 @@ async def get_current_active_superuser(
             detail="O utilizador não tem privilégios suficientes",
         )
     return current_user
+
+
+async def get_current_admin_or_secretaria(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """
+    Verifica se o utilizador é Admin ou Secretaria.
+    Usado para funcionalidades de pesquisa.
+    """
+    if current_user.is_superuser or current_user.role == "secretaria":
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Acesso restrito a Admin e Secretaria",
+    )

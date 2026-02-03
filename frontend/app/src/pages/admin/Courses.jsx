@@ -17,7 +17,7 @@ const AdminCourses = () => {
     description: "",
     start_date: "",
     end_date: "",
-    status: "planeado",
+    status: "planned",
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -310,18 +310,24 @@ const AdminCourses = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                       ${
-                        course.status === "ativo"
+                        course.status === "active"
                           ? "bg-green-100 text-green-800"
-                          : course.status === "terminado"
+                          : course.status === "finished"
                             ? "bg-gray-100 text-gray-800"
-                            : course.status === "cancelado"
+                            : course.status === "cancelled"
                               ? "bg-red-100 text-red-800"
                               : "bg-blue-100 text-blue-800"
                       }`}
                   >
-                    {course.status}
+                    {course.status === "active"
+                      ? "Ativo"
+                      : course.status === "finished"
+                        ? "Terminado"
+                        : course.status === "cancelled"
+                          ? "Cancelado"
+                          : "Planeado"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -656,10 +662,10 @@ const AdminCourses = () => {
                   }
                   className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 >
-                  <option value="planeado">Planeado</option>
-                  <option value="ativo">Ativo</option>
-                  <option value="terminado">Terminado</option>
-                  <option value="cancelado">Cancelado</option>
+                  <option value="planned">Planeado</option>
+                  <option value="active">Ativo</option>
+                  <option value="finished">Terminado</option>
+                  <option value="cancelled">Cancelado</option>
                 </select>
               </div>
 
@@ -788,10 +794,10 @@ const AdminCourses = () => {
                   }
                   className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 >
-                  <option value="planeado">Planeado</option>
-                  <option value="ativo">Ativo</option>
-                  <option value="terminado">Terminado</option>
-                  <option value="cancelado">Cancelado</option>
+                  <option value="planned">Planeado</option>
+                  <option value="active">Ativo</option>
+                  <option value="finished">Terminado</option>
+                  <option value="cancelled">Cancelado</option>
                 </select>
               </div>
 

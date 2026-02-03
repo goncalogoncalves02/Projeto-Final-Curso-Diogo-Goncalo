@@ -9,10 +9,15 @@ const AdminEnrollments = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
-  
+
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalInfo, setModalInfo] = useState({ title: "", message: "", type: "info", onConfirm: null });
+  const [modalInfo, setModalInfo] = useState({
+    title: "",
+    message: "",
+    type: "info",
+    onConfirm: null,
+  });
 
   useEffect(() => {
     // Fetch courses and users for dropdowns
@@ -20,10 +25,14 @@ const AdminEnrollments = () => {
       try {
         const [coursesRes, usersRes] = await Promise.all([
           api.get("/courses/?limit=100"),
-          api.get("/users/?limit=100")
+          api.get("/users/?limit=100"),
         ]);
         setCourses(coursesRes.data);
-        setUsers(usersRes.data.filter(u => u.role === 'estudante' || u.role === 'student' || true));
+        setUsers(
+          usersRes.data.filter(
+            (u) => u.role === "estudante" || u.role === "student" || true,
+          ),
+        );
       } catch (err) {
         console.log(err);
         console.error("Failed to load initial data");
@@ -43,8 +52,8 @@ const AdminEnrollments = () => {
   };
 
   const showModal = (title, message, type = "info", onConfirm = null) => {
-      setModalInfo({ title, message, type, onConfirm });
-      setModalOpen(true);
+    setModalInfo({ title, message, type, onConfirm });
+    setModalOpen(true);
   };
 
   const fetchEnrollments = async (courseId) => {
@@ -68,8 +77,8 @@ const AdminEnrollments = () => {
       const payload = {
         course_id: parseInt(selectedCourse),
         user_id: parseInt(selectedUser),
-        enrollment_date: new Date().toISOString().split('T')[0], // Today YYYY-MM-DD
-        status: "active"
+        enrollment_date: new Date().toISOString().split("T")[0], // Today YYYY-MM-DD
+        status: "active",
       };
       const response = await api.post("/enrollments/", payload);
       setEnrollments([...enrollments, response.data]);
@@ -77,17 +86,21 @@ const AdminEnrollments = () => {
       showModal("Sucesso", "Aluno inscrito com sucesso!", "success");
     } catch (err) {
       console.error(err);
-      showModal("Erro", "Erro ao inscrever aluno. Verifica se já está inscrito.", "error");
+      showModal(
+        "Erro",
+        "Erro ao inscrever aluno. Verifica se já está inscrito.",
+        "error",
+      );
     }
   };
 
   const confirmDelete = (id) => {
-      showModal(
-          "Remover Inscrição", 
-          "Tem a certeza que quer remover esta inscrição? Esta ação não pode ser desfeita.", 
-          "destructive",
-          () => handleDelete(id)
-      );
+    showModal(
+      "Remover Inscrição",
+      "Tem a certeza que quer remover esta inscrição? Esta ação não pode ser desfeita.",
+      "destructive",
+      () => handleDelete(id),
+    );
   };
 
   const handleDelete = async (id) => {
@@ -103,20 +116,20 @@ const AdminEnrollments = () => {
 
   // Helper to find user name by ID
   const getUserName = (userId) => {
-    const user = users.find(u => u.id === userId);
+    const user = users.find((u) => u.id === userId);
     return user ? `${user.full_name || user.email}` : `User #${userId}`;
   };
 
   const getUserEmail = (userId) => {
-     const user = users.find(u => u.id === userId);
-     return user ? user.email : "";
+    const user = users.find((u) => u.id === userId);
+    return user ? user.email : "";
   };
 
   return (
     <div className="container mx-auto p-6">
-      <Modal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
         title={modalInfo.title}
         type={modalInfo.type}
         onConfirm={modalInfo.onConfirm}
@@ -154,29 +167,29 @@ const AdminEnrollments = () => {
 
         {/* Enroll New Student Form */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-           <label className="block text-gray-700 text-sm font-bold mb-2">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
             2. Inscrever Novo Aluno
           </label>
           <form onSubmit={handleEnroll} className="flex gap-2">
             <select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                disabled={!selectedCourse}
-                className="block w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500 disabled:opacity-50"
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              disabled={!selectedCourse}
+              className="block w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500 disabled:opacity-50"
             >
-                <option value="">Selecione um aluno para inscrever...</option>
-                {users.map((u) => (
+              <option value="">Selecione um aluno para inscrever...</option>
+              {users.map((u) => (
                 <option key={u.id} value={u.id}>
-                    {u.full_name ? `${u.full_name} (${u.email})` : u.email}
+                  {u.full_name ? `${u.full_name} (${u.email})` : u.email}
                 </option>
-                ))}
+              ))}
             </select>
             <button
-                type="submit"
-                disabled={!selectedCourse || !selectedUser}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 flex items-center"
+              type="submit"
+              disabled={!selectedCourse || !selectedUser}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 flex items-center"
             >
-                <UserPlus className="w-5 h-5" />
+              <UserPlus className="w-5 h-5" />
             </button>
           </form>
         </div>
@@ -185,19 +198,23 @@ const AdminEnrollments = () => {
       {/* Enrollments List */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h3 className="text-lg font-medium text-gray-900">
-                Alunos Inscritos {selectedCourse && courses.find(c => c.id === parseInt(selectedCourse))?.name ? `- ${courses.find(c => c.id === parseInt(selectedCourse)).name}` : ""}
-            </h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            Alunos Inscritos{" "}
+            {selectedCourse &&
+            courses.find((c) => c.id === parseInt(selectedCourse))?.name
+              ? `- ${courses.find((c) => c.id === parseInt(selectedCourse)).name}`
+              : ""}
+          </h3>
         </div>
-        
+
         {!selectedCourse ? (
-            <div className="p-8 text-center text-gray-500">
-                Selecione um curso para ver as inscrições.
-            </div>
+          <div className="p-8 text-center text-gray-500">
+            Selecione um curso para ver as inscrições.
+          </div>
         ) : enrollments.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-                Ainda não há alunos inscritos neste curso.
-            </div>
+          <div className="p-8 text-center text-gray-500">
+            Ainda não há alunos inscritos neste curso.
+          </div>
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -233,12 +250,22 @@ const AdminEnrollments = () => {
                     {enrollment.enrollment_date}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        enrollment.status === 'active' ? 'bg-green-100 text-green-800' : 
-                        enrollment.status === 'dropped' ? 'bg-red-100 text-red-800' : 
-                        'bg-gray-100 text-gray-800'
-                    }`}>
-                        {enrollment.status}
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        enrollment.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : enrollment.status === "dropped"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {enrollment.status === "active"
+                        ? "Ativo"
+                        : enrollment.status === "completed"
+                          ? "Concluído"
+                          : enrollment.status === "dropped"
+                            ? "Desistente"
+                            : enrollment.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

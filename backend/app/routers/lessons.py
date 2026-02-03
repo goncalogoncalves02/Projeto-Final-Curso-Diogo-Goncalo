@@ -13,16 +13,14 @@ from typing import List, Any, Optional
 from datetime import date, time, timedelta, datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_
 
 from app.db.session import get_db
 from app.api import deps
 from app.models.lesson import Lesson as LessonModel
 from app.models.course_module import CourseModule as CourseModuleModel
 from app.models.course import Course as CourseModel
-from app.models.module import Module as ModuleModel
 from app.models.classroom import Classroom as ClassroomModel
-from app.models.user import User as UserModel
 from app.schemas.lesson import (
     Lesson,
     LessonCreate,
@@ -32,6 +30,8 @@ from app.schemas.lesson import (
     LessonHoursInfo,
     LessonCreateResponse,
 )
+from app.crud import lesson as lesson_crud
+from app.crud import course_module as course_module_crud
 
 router = APIRouter()
 
@@ -58,14 +58,11 @@ def get_scheduled_hours_for_module(
     db: Session, course_module_id: int, exclude_lesson_id: int = None
 ) -> float:
     """Calcula o total de horas já agendadas para um módulo."""
-    query = db.query(LessonModel).filter(
-        LessonModel.course_module_id == course_module_id
-    )
+    lessons = lesson_crud.get_by_course_module(db, course_module_id=course_module_id)
 
     if exclude_lesson_id:
-        query = query.filter(LessonModel.id != exclude_lesson_id)
+        lessons = [l for l in lessons if l.id != exclude_lesson_id]
 
-    lessons = query.all()
     total = 0.0
     for lesson in lessons:
         total += calculate_lesson_hours(lesson.start_time, lesson.end_time)
@@ -89,11 +86,7 @@ def validate_lesson(
     errors = []
 
     # Obter dados do módulo
-    course_module = (
-        db.query(CourseModuleModel)
-        .filter(CourseModuleModel.id == course_module_id)
-        .first()
-    )
+    course_module = course_module_crud.get(db, id=course_module_id)
 
     if not course_module:
         errors.append(
@@ -107,11 +100,9 @@ def validate_lesson(
     actual_classroom_id = classroom_id or course_module.classroom_id
 
     # Query base para aulas no mesmo dia
-    base_query = db.query(LessonModel).filter(LessonModel.date == lesson_date)
+    lessons_same_day = lesson_crud.get_by_date(db, lesson_date=lesson_date)
     if exclude_lesson_id:
-        base_query = base_query.filter(LessonModel.id != exclude_lesson_id)
-
-    lessons_same_day = base_query.all()
+        lessons_same_day = [l for l in lessons_same_day if l.id != exclude_lesson_id]
 
     for existing_lesson in lessons_same_day:
         # Verificar sobreposição de horário
@@ -124,11 +115,7 @@ def validate_lesson(
         existing_classroom = existing_lesson.classroom_id
         if existing_classroom is None:
             # Usar sala do módulo da aula existente
-            existing_cm = (
-                db.query(CourseModuleModel)
-                .filter(CourseModuleModel.id == existing_lesson.course_module_id)
-                .first()
-            )
+            existing_cm = course_module_crud.get(db, id=existing_lesson.course_module_id)
             if existing_cm:
                 existing_classroom = existing_cm.classroom_id
 
@@ -142,11 +129,7 @@ def validate_lesson(
             )
 
         # VALIDAÇÃO 2: Conflito de Professor
-        existing_cm = (
-            db.query(CourseModuleModel)
-            .filter(CourseModuleModel.id == existing_lesson.course_module_id)
-            .first()
-        )
+        existing_cm = course_module_crud.get(db, id=existing_lesson.course_module_id)
 
         if existing_cm and existing_cm.trainer_id == course_module.trainer_id:
             errors.append(
@@ -247,16 +230,9 @@ def list_lessons(
     limit: int = 100,
 ):
     """Lista todas as aulas com filtros opcionais."""
-    query = db.query(LessonModel)
-
-    if start_date:
-        query = query.filter(LessonModel.date >= start_date)
-    if end_date:
-        query = query.filter(LessonModel.date <= end_date)
-
-    query = query.order_by(LessonModel.date, LessonModel.start_time)
-    lessons = query.offset(skip).limit(limit).all()
-
+    lessons = lesson_crud.get_by_date_range(
+        db, start_date=start_date, end_date=end_date, skip=skip, limit=limit
+    )
     return [build_lesson_with_details(db, lesson) for lesson in lessons]
 
 
@@ -267,11 +243,7 @@ def get_module_hours_info(
     current_user: Any = Depends(deps.get_current_active_user),
 ):
     """Retorna informação sobre as horas de um módulo."""
-    course_module = (
-        db.query(CourseModuleModel)
-        .filter(CourseModuleModel.id == course_module_id)
-        .first()
-    )
+    course_module = course_module_crud.get(db, id=course_module_id)
 
     if not course_module:
         raise HTTPException(status_code=404, detail="Módulo do curso não encontrado")
@@ -308,11 +280,7 @@ def create_lesson(
             dates_to_create.append(lesson_in.date + timedelta(weeks=week))
 
     # Obter dados do módulo para info de horas
-    course_module = (
-        db.query(CourseModuleModel)
-        .filter(CourseModuleModel.id == lesson_in.course_module_id)
-        .first()
-    )
+    course_module = course_module_crud.get(db, id=lesson_in.course_module_id)
 
     if not course_module:
         raise HTTPException(status_code=404, detail="Módulo do curso não encontrado")
@@ -361,18 +329,16 @@ def create_lesson(
                 },
             )
 
-        # Criar a aula
-        lesson = LessonModel(
+        # Criar a aula usando o CRUD
+        lesson = lesson_crud.create_simple(
+            db,
             course_module_id=lesson_in.course_module_id,
             classroom_id=lesson_in.classroom_id,
-            date=lesson_date,
+            lesson_date=lesson_date,
             start_time=lesson_in.start_time,
             end_time=lesson_in.end_time,
             notes=lesson_in.notes,
         )
-        db.add(lesson)
-        db.commit()
-        db.refresh(lesson)
         created_lessons.append(lesson)
 
     # Preparar resposta com info de horas atualizada
@@ -400,7 +366,7 @@ def update_lesson(
     current_user: Any = Depends(deps.get_current_active_superuser),
 ):
     """Atualiza uma aula existente (com validações)."""
-    lesson = db.query(LessonModel).filter(LessonModel.id == lesson_id).first()
+    lesson = lesson_crud.get(db, id=lesson_id)
 
     if not lesson:
         raise HTTPException(status_code=404, detail="Aula não encontrada")
@@ -435,15 +401,7 @@ def update_lesson(
             },
         )
 
-    # Aplicar alterações
-    update_data = lesson_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(lesson, field, value)
-
-    db.add(lesson)
-    db.commit()
-    db.refresh(lesson)
-    return lesson
+    return lesson_crud.update(db, db_obj=lesson, obj_in=lesson_in)
 
 
 @router.delete("/{lesson_id}", response_model=Lesson)
@@ -453,14 +411,12 @@ def delete_lesson(
     current_user: Any = Depends(deps.get_current_active_superuser),
 ):
     """Remove uma aula."""
-    lesson = db.query(LessonModel).filter(LessonModel.id == lesson_id).first()
+    lesson = lesson_crud.get(db, id=lesson_id)
 
     if not lesson:
         raise HTTPException(status_code=404, detail="Aula não encontrada")
 
-    db.delete(lesson)
-    db.commit()
-    return lesson
+    return lesson_crud.remove(db, id=lesson_id)
 
 
 # ============================================
@@ -487,33 +443,20 @@ def get_my_schedule(
         )
 
     # Obter todos os módulos onde o user é trainer
-    query = db.query(CourseModuleModel).filter(
-        CourseModuleModel.trainer_id == current_user.id
-    )
+    course_modules = course_module_crud.get_multi(db, limit=1000)
+    course_modules = [cm for cm in course_modules if cm.trainer_id == current_user.id]
 
     # Se filtrar por curso, aplicar
     if course_id:
-        query = query.filter(CourseModuleModel.course_id == course_id)
-
-    course_modules = query.all()
+        course_modules = [cm for cm in course_modules if cm.course_id == course_id]
 
     if not course_modules:
         return []
 
     module_ids = [cm.id for cm in course_modules]
-
-    # Obter todas as aulas desses módulos
-    lesson_query = db.query(LessonModel).filter(
-        LessonModel.course_module_id.in_(module_ids)
+    lessons = lesson_crud.get_by_course_module_ids(
+        db, course_module_ids=module_ids, start_date=start_date, end_date=end_date
     )
-
-    if start_date:
-        lesson_query = lesson_query.filter(LessonModel.date >= start_date)
-    if end_date:
-        lesson_query = lesson_query.filter(LessonModel.date <= end_date)
-
-    lesson_query = lesson_query.order_by(LessonModel.date, LessonModel.start_time)
-    lessons = lesson_query.all()
 
     return [build_lesson_with_details(db, lesson) for lesson in lessons]
 
@@ -534,11 +477,8 @@ def get_my_courses(
         )
 
     # Obter cursos distintos dos módulos do professor
-    course_modules = (
-        db.query(CourseModuleModel)
-        .filter(CourseModuleModel.trainer_id == current_user.id)
-        .all()
-    )
+    course_modules = course_module_crud.get_multi(db, limit=1000)
+    course_modules = [cm for cm in course_modules if cm.trainer_id == current_user.id]
 
     course_ids = set(cm.course_id for cm in course_modules)
 
@@ -560,27 +500,15 @@ def get_lessons_by_course(
     Requisito 1.k: Consulta rápida de horário de turma com filtro por tempo.
     """
     # Obter todos os módulos deste curso
-    course_modules = (
-        db.query(CourseModuleModel)
-        .filter(CourseModuleModel.course_id == course_id)
-        .all()
-    )
+    course_modules = course_module_crud.get_by_course(db, course_id=course_id)
 
     if not course_modules:
         return []
 
     module_ids = [cm.id for cm in course_modules]
-
-    # Obter todas as aulas desses módulos
-    query = db.query(LessonModel).filter(LessonModel.course_module_id.in_(module_ids))
-
-    if start_date:
-        query = query.filter(LessonModel.date >= start_date)
-    if end_date:
-        query = query.filter(LessonModel.date <= end_date)
-
-    query = query.order_by(LessonModel.date, LessonModel.start_time)
-    lessons = query.all()
+    lessons = lesson_crud.get_by_course_module_ids(
+        db, course_module_ids=module_ids, start_date=start_date, end_date=end_date
+    )
 
     return [build_lesson_with_details(db, lesson) for lesson in lessons]
 
@@ -598,27 +526,16 @@ def get_lessons_by_trainer(
     Requisito 1.l: Consulta rápida de horário de formador com filtro por tempo.
     """
     # Obter todos os módulos deste professor
-    course_modules = (
-        db.query(CourseModuleModel)
-        .filter(CourseModuleModel.trainer_id == trainer_id)
-        .all()
-    )
+    course_modules = course_module_crud.get_multi(db, limit=1000)
+    course_modules = [cm for cm in course_modules if cm.trainer_id == trainer_id]
 
     if not course_modules:
         return []
 
     module_ids = [cm.id for cm in course_modules]
-
-    # Obter todas as aulas desses módulos
-    query = db.query(LessonModel).filter(LessonModel.course_module_id.in_(module_ids))
-
-    if start_date:
-        query = query.filter(LessonModel.date >= start_date)
-    if end_date:
-        query = query.filter(LessonModel.date <= end_date)
-
-    query = query.order_by(LessonModel.date, LessonModel.start_time)
-    lessons = query.all()
+    lessons = lesson_crud.get_by_course_module_ids(
+        db, course_module_ids=module_ids, start_date=start_date, end_date=end_date
+    )
 
     return [build_lesson_with_details(db, lesson) for lesson in lessons]
 
@@ -642,11 +559,8 @@ def get_lessons_by_classroom(
     query = db.query(LessonModel).filter(LessonModel.classroom_id == classroom_id)
 
     # Também incluir aulas onde a sala vem do módulo
-    modules_with_classroom = (
-        db.query(CourseModuleModel.id)
-        .filter(CourseModuleModel.classroom_id == classroom_id)
-        .all()
-    )
+    modules_with_classroom = course_module_crud.get_multi(db, limit=1000)
+    modules_with_classroom = [m for m in modules_with_classroom if m.classroom_id == classroom_id]
     module_ids = [m.id for m in modules_with_classroom]
 
     if module_ids:

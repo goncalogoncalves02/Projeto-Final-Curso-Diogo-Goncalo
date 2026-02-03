@@ -27,7 +27,7 @@ const AdminModuleGrades = () => {
         const fetchCourses = async () => {
             try {
                 const res = await api.get("/courses/");
-                setCourses(res.data.filter(c => c.status === 'ativo' || c.status === 'planeado')); // Show active courses
+                setCourses(res.data.filter(c => c.status === 'active' || c.status === 'planned')); // Show active courses
                 setLoading(false);
             } catch (err) {
                 console.error(err);

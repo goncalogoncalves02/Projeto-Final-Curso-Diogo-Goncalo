@@ -17,14 +17,12 @@ import enum
 
 
 class EnrollmentStatus(str, enum.Enum):
-
     active = "active"  # A frequentar
     completed = "completed"  # Aprovado/Terminado
     dropped = "dropped"  # Desistiu
 
 
 class Enrollment(Base):
-
     __tablename__ = "enrollments"
 
     id = Column(Integer, primary_key=True, index=True)

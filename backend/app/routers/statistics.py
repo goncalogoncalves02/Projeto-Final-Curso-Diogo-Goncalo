@@ -5,7 +5,7 @@ Endpoint para obter métricas agregadas do sistema para o Dashboard.
 """
 
 from typing import Any
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -31,17 +31,21 @@ def calculate_lesson_duration_hours(start_time: time, end_time: time) -> float:
 @router.get("/")
 def get_statistics(
     db: Session = Depends(get_db),
-    current_user: Any = Depends(deps.get_current_active_superuser),
+    current_user: Any = Depends(deps.get_current_admin_or_secretaria),
 ):
     """
-    Retorna estatísticas agregadas do sistema (Apenas Admin).
+    Retorna estatísticas agregadas do sistema (Admin e Secretaria).
 
     i. Total de cursos terminados
     ii. Total de cursos a decorrer
     iii. Total de formandos a frequentar cursos no atual momento
     iv. Nº de cursos por área
-    v. Top 10 de formadores com maior nº de horas lecionadas (HORAS REAIS - aulas já dadas)
+    v. Top 10 de professores com maior nº de horas lecionadas (HORAS REAIS - aulas já dadas)
+    vi. Lista de cursos a decorrer (detalhes)
+    vii. Lista de cursos a iniciar nos próximos 60 dias
     """
+
+    today = date.today()
 
     # i. Total de cursos terminados
     courses_finished = (
@@ -75,9 +79,8 @@ def get_statistics(
 
     courses_by_area = {row.area: row.count for row in courses_by_area_query}
 
-    # v. Top 10 de formadores com maior nº de horas REALMENTE lecionadas
+    # v. Top 10 de professores com maior nº de horas REALMENTE lecionadas
     # Agora calculamos com base nas aulas (lessons) que já aconteceram (date <= hoje)
-    today = date.today()
 
     # Obter todas as aulas passadas com os dados do módulo
     past_lessons = (
@@ -119,10 +122,55 @@ def get_statistics(
                     }
                 )
 
+    # vi. Lista de cursos a decorrer (detalhes)
+    courses_running = (
+        db.query(CourseModel)
+        .filter(CourseModel.status == CourseStatus.active)
+        .order_by(CourseModel.start_date.desc())
+        .all()
+    )
+
+    courses_running_list = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "area": c.area,
+            "start_date": c.start_date.isoformat() if c.start_date else None,
+            "end_date": c.end_date.isoformat() if c.end_date else None,
+        }
+        for c in courses_running
+    ]
+
+    # vii. Lista de cursos a iniciar nos próximos 60 dias
+    sixty_days_later = today + timedelta(days=60)
+    courses_starting_soon = (
+        db.query(CourseModel)
+        .filter(
+            CourseModel.status == CourseStatus.planned,
+            CourseModel.start_date >= today,
+            CourseModel.start_date <= sixty_days_later,
+        )
+        .order_by(CourseModel.start_date.asc())
+        .all()
+    )
+
+    courses_starting_soon_list = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "area": c.area,
+            "start_date": c.start_date.isoformat() if c.start_date else None,
+            "days_until_start": (c.start_date - today).days if c.start_date else None,
+        }
+        for c in courses_starting_soon
+    ]
+
     return {
         "courses_finished": courses_finished,
         "courses_active": courses_active,
         "students_active": students_active,
         "courses_by_area": courses_by_area,
         "top_trainers": top_trainers,
+        "courses_running": courses_running_list,
+        "courses_starting_soon": courses_starting_soon_list,
     }
