@@ -1,7 +1,17 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Procurar .env na raiz do projeto (pasta pai de /backend)
+# Funciona tanto para desenvolvimento local como Docker
+project_root = Path(__file__).resolve().parent.parent.parent.parent
+env_path = project_root / ".env"
+
+# Se não encontrar na raiz, tenta na pasta backend (compatibilidade)
+if not env_path.exists():
+    env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+
+load_dotenv(env_path)
 
 # Definições de configuração do projeto
 # Em um ambiente real, valores como SECRET_KEY devem vir de variáveis de ambiente
@@ -17,9 +27,9 @@ class Settings:
     # Tempo de expiração do token de acesso em minutos
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # Configuração da Base de Dados (SQLite por enquanto para facilidade)
-    # O ficheiro será criado na pasta backend
-    DATABASE_URL: str = "sqlite:///./sql_app.db"
+    # Configuração da Base de Dados (SQLite)
+    # Em Docker usa /app/data, localmente usa o caminho relativo
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
 
     # Configuração de Email
     MAIL_USERNAME: str = os.getenv("MAIL_USERNAME")

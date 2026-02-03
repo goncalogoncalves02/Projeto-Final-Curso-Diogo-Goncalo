@@ -1,20 +1,32 @@
+# Dependências do Backend FastAPI
+# ================================
+
+# Framework Web
 fastapi
-uvicorn
+uvicorn[standard]
+
+# Base de Dados
 sqlalchemy
+aiosqlite
 
-passlib
-argon2-cffi
-
+# Autenticação e Segurança
+passlib[bcrypt]
+bcrypt
 python-jose[cryptography]
 python-multipart
 
+# Email
 fastapi-mail
-httpx
+email-validator
 
-
-
+# OAuth (Google, Facebook)
 authlib
+httpx
 itsdangerous
 
-email-validator
+# Configuração
 python-dotenv
+pydantic-settings
+
+# Migrations (opcional, mas útil)
+alembic

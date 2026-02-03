@@ -1,90 +1,157 @@
-# Projeto Final - Gestão Escolar ATEC
+# 🎓 Sistema de Gestão Escolar ATEC
 
-Este projeto é uma aplicação web completa com Backend (FastAPI) e Frontend (React), incluindo autenticação avançada, 2FA e gestão de utilizadores.
+Sistema completo de gestão para a secretaria da ATEC, desenvolvido como projeto final do curso TPSI-PAL0525.
 
-## 📋 Pré-requisitos
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
 
-- **Node.js** (v18 ou superior)
-- **Python** (v3.9 ou superior)
-- **Git**
+## ✨ Funcionalidades
 
----
-
-## 🚀 Como Correr o Projeto
-
-### 1. Configurar o Backend (API)
-
-O backend é feito em Python com FastAPI.
-
-1.  Abra um terminal e entre na pasta `backend`:
-
-    ```bash
-    cd backend
-    ```
-
-2.  Crie um ambiente virtual (venv) para isolar as dependências:
-
-    ```bash
-    python -m venv venv
-    ```
-
-3.  Ative o ambiente virtual:
-
-    - **Windows (PowerShell/CMD):** `venv\Scripts\activate`
-    - **Mac/Linux:** `source venv/bin/activate`
-
-4.  Instale as bibliotecas necessárias:
-
-    - **Dica:** Antes de instalar, atualize o pip para evitar erros de compilação (especialmente com o `argon2-cffi`):
-      ```bash
-      python -m pip install --upgrade pip setuptools wheel
-      ```
-    - Depois instale os requisitos:
-      ```bash
-      pip install -r requirements.txt
-      ```
-
-    > **Nota:** Se der erro no `argon2-cffi-bindings`, é provável que falte o "C++ Build Tools". A atualização do pip acima costuma resolver, mas se persistir, pode ser necessário baixar o instalador do Visual Studio Build Tools.
-
-5.  Configure as variáveis de ambiente:
-
-    - Copie o ficheiro `.env.example` para um novo ficheiro chamado `.env`.
-    - Edite o `.env` e coloque os seus dados (Email, Password de Aplicação Google, Chaves Secretas).
-
-6.  Inicie o servidor:
-    ```bash
-    uvicorn app.main:app --reload
-    ```
-    _O servidor ficará disponível em: `http://localhost:8000`_
+- 🔐 **Autenticação** - Login, Registo, OAuth (Google), Recuperação de Password
+- 👥 **Gestão de Utilizadores** - Admin, Professores, Estudantes, Secretaria
+- 📚 **Gestão de Cursos** - CRUD com estrutura curricular (módulos/professores/salas)
+- 🏫 **Gestão de Salas e Módulos** - Catálogo completo
+- 📅 **Sistema de Horários** - Calendário gráfico com validações de conflitos
+- 📝 **Lançamento de Notas** - Por módulo e aluno
+- 📊 **Dashboard** - Estatísticas e gráficos
+- 📎 **Anexar Ficheiros** - Upload de documentos para perfis
 
 ---
 
-### 2. Configurar o Frontend (Interface)
+## 🚀 Início Rápido (Docker)
 
-O frontend é feito em React com Vite.
+A forma mais fácil de correr o projeto é com Docker.
 
-1.  Abra **outro** terminal e entre na pasta `frontend/app`:
+### Pré-requisitos
 
-    ```bash
-    cd frontend/app
-    ```
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado
 
-2.  Instale as dependências:
+### Passos
 
-    ```bash
-    npm install
-    ```
+```bash
+# 1. Clonar o repositório
+git clone https://github.com/goncalogoncalves02/Projeto-Final-Curso-Diogo-Goncalo.git
+cd Projeto-Final-Curso-Diogo-Goncalo
 
-3.  Inicie o servidor de desenvolvimento:
-    ```bash
-    npm run dev
-    ```
-    _A aplicação abrirá em: `http://localhost:5173`_
+# 2. Configurar variáveis de ambiente
+cp .env.example .env
+# Editar .env com os seus valores (ver secção Configuração)
+
+# 3. Iniciar com Docker
+docker-compose up
+
+# 4. Abrir no browser
+# Frontend: http://localhost:5173
+# API Docs: http://localhost:8000/docs
+```
+
+Para parar: `Ctrl+C` ou `docker-compose down`
 
 ---
 
-## 🛠️ Tecnologias Usadas
+## 🛠️ Desenvolvimento Local (Sem Docker)
 
-- **Backend:** FastAPI, SQLAlchemy, SQLite, Pydantic, Argon2, JWT.
-- **Frontend:** React, Vite, Tailwind CSS, Axios, React Router.
-- **Funcionalidades:** Login, Registo, Recuperação de Password, 2FA (Email), Google Login, Painel de Admin.
+Se preferires desenvolver sem Docker:
+
+### Backend (FastAPI)
+
+```bash
+cd backend
+
+# Criar ambiente virtual
+python -m venv venv
+
+# Ativar (Windows)
+.\venv\Scripts\Activate.ps1
+
+# Instalar dependências
+pip install -r requirements.txt
+
+# Correr servidor
+uvicorn app.main:app --reload
+# API disponível em http://localhost:8000
+```
+
+### Frontend (React + Vite)
+
+```bash
+cd frontend/app
+
+# Instalar dependências
+npm install
+
+# Correr servidor de desenvolvimento
+npm run dev
+# Aplicação disponível em http://localhost:5173
+```
+
+---
+
+## ⚙️ Configuração
+
+Cria um ficheiro `.env` na raiz do projeto (ou copia de `.env.example`):
+
+```env
+# Obrigatório
+SECRET_KEY=uma-chave-secreta-segura
+
+# Email (para ativação de conta e reset password)
+MAIL_USERNAME=seu-email@gmail.com
+MAIL_PASSWORD=sua-app-password
+MAIL_FROM=seu-email@gmail.com
+MAIL_PORT=587
+MAIL_SERVER=smtp.gmail.com
+
+# Google OAuth (opcional)
+GOOGLE_CLIENT_ID=xxx
+GOOGLE_CLIENT_SECRET=xxx
+```
+
+> 💡 **Dica:** Para o Gmail, usa uma [App Password](https://support.google.com/accounts/answer/185833) em vez da password normal.
+
+---
+
+## 📁 Estrutura do Projeto
+
+```
+├── backend/                 # API FastAPI
+│   ├── app/
+│   │   ├── routers/        # Endpoints
+│   │   ├── models/         # SQLAlchemy models
+│   │   └── schemas/        # Pydantic schemas
+│   └── Dockerfile
+├── frontend/               # React + Vite
+│   └── app/
+│       ├── src/pages/      # Páginas
+│       ├── src/components/ # Componentes
+│       └── Dockerfile
+├── docker-compose.yml      # Orquestração
+└── .env.example           # Template de configuração
+```
+
+---
+
+## 🧰 Tecnologias
+
+| Camada        | Tecnologia                       |
+| ------------- | -------------------------------- |
+| Backend       | Python 3.11, FastAPI, SQLAlchemy |
+| Frontend      | React 18, Vite, TailwindCSS      |
+| Base de Dados | SQLite                           |
+| Autenticação  | JWT, OAuth2, bcrypt              |
+| Container     | Docker, Docker Compose           |
+
+---
+
+## 👥 Autores
+
+- **Gonçalo Gonçalves** - [GitHub](https://github.com/goncalogoncalves02)
+- **Diogo** - Colaborador
+
+---
+
+## 📄 Licença
+
+Este projeto é para fins educativos - Projeto Final ATEC 2026.
