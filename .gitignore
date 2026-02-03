@@ -39,6 +39,8 @@ __pycache__/
 env/
 venv/
 sql_app.db
+*.db
+*.sqlite3
 guide.md
 PROJECT_STATUS.md
 backend/uploads/users

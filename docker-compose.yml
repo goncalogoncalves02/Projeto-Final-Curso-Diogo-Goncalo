@@ -1,0 +1,65 @@
+
+# Docker Compose - Sistema de Gestão ATEC
+# ========================================
+# Uso:
+#   docker-compose up          -> Inicia tudo
+#   docker-compose up -d       -> Inicia em background
+#   docker-compose down        -> Para tudo
+#   docker-compose logs -f     -> Ver logs em tempo real
+
+services:
+  # ===== BACKEND (FastAPI) =====
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: atec-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Monta o código local no container (hot reload funciona!)
+      - ./backend:/app
+      # Volume nomeado para a base de dados (persiste entre reinícios)
+      - sqlite-data:/app/data
+      # Volume para uploads
+      - ./backend/uploads:/app/uploads
+    environment:
+      # Variáveis de ambiente (podem ser movidas para .env)
+      - SECRET_KEY=${SECRET_KEY:-supersecretkey123}
+      - DATABASE_URL=sqlite:///./data/sql_app.db
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_FROM=${MAIL_FROM:-}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_SERVER=${MAIL_SERVER:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===== FRONTEND (React/Vite) =====
+  frontend:
+    build:
+      context: ./frontend/app
+      dockerfile: Dockerfile
+    container_name: atec-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Monta o código local no container (hot reload funciona!)
+      - ./frontend/app:/app
+      # Evita sobrescrever node_modules do container
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# Volume nomeado para persistir a base de dados
+volumes:
+  sqlite-data:
