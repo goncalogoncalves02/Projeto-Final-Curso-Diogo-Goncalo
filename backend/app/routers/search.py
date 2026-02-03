@@ -1,12 +1,14 @@
 """
 Router de Pesquisa - Admin e Secretaria
-Permite pesquisar cursos, estudantes e professores.
+Permite pesquisar cursos, estudantes e professores com paginação.
 """
 
-from typing import List
+from typing import List, Optional, Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
+from pydantic import BaseModel
+import math
 
 from app.db.session import get_db
 from app.api import deps
@@ -18,81 +20,139 @@ from app.schemas.course import Course as CourseSchema
 router = APIRouter()
 
 
-@router.get("/courses", response_model=List[CourseSchema])
+# Schema para resposta paginada
+class PaginatedResponse(BaseModel):
+    items: List[Any]
+    total: int
+    page: int
+    pages: int
+    limit: int
+
+
+@router.get("/courses")
 def search_courses(
-    q: str = Query(..., min_length=2, description="Termo de pesquisa"),
-    limit: int = Query(20, ge=1, le=100, description="Máximo de resultados"),
+    q: Optional[str] = Query(
+        None, min_length=2, description="Termo de pesquisa (opcional)"
+    ),
+    page: int = Query(1, ge=1, description="Página atual"),
+    limit: int = Query(20, ge=1, le=100, description="Items por página"),
     db: Session = Depends(get_db),
     current_user: User = Depends(deps.get_current_admin_or_secretaria),
 ):
     """
-    Pesquisa cursos por nome ou área.
+    Lista/Pesquisa cursos com paginação.
     Apenas Admin e Secretaria.
     """
-    search_term = f"%{q}%"
-    courses = (
-        db.query(Course)
-        .filter(
+    query = db.query(Course)
+
+    # Aplicar filtro de pesquisa se fornecido
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
             or_(
                 Course.name.ilike(search_term),
                 Course.area.ilike(search_term),
             )
         )
-        .limit(limit)
-        .all()
-    )
-    return courses
+
+    # Contar total
+    total = query.count()
+    pages = math.ceil(total / limit) if total > 0 else 1
+
+    # Aplicar paginação
+    skip = (page - 1) * limit
+    items = query.offset(skip).limit(limit).all()
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "limit": limit,
+    }
 
 
-@router.get("/students", response_model=List[UserSchema])
+@router.get("/students")
 def search_students(
-    q: str = Query(..., min_length=2, description="Termo de pesquisa"),
-    limit: int = Query(20, ge=1, le=100, description="Máximo de resultados"),
+    q: Optional[str] = Query(
+        None, min_length=2, description="Termo de pesquisa (opcional)"
+    ),
+    page: int = Query(1, ge=1, description="Página atual"),
+    limit: int = Query(20, ge=1, le=100, description="Items por página"),
     db: Session = Depends(get_db),
     current_user: User = Depends(deps.get_current_admin_or_secretaria),
 ):
     """
-    Pesquisa estudantes por nome ou email.
+    Lista/Pesquisa estudantes com paginação.
     Apenas Admin e Secretaria.
     """
-    search_term = f"%{q}%"
-    students = (
-        db.query(User)
-        .filter(
-            User.role == "estudante",
+    query = db.query(User).filter(User.role == "estudante")
+
+    # Aplicar filtro de pesquisa se fornecido
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
             or_(
                 User.full_name.ilike(search_term),
                 User.email.ilike(search_term),
-            ),
+            )
         )
-        .limit(limit)
-        .all()
-    )
-    return students
+
+    # Contar total
+    total = query.count()
+    pages = math.ceil(total / limit) if total > 0 else 1
+
+    # Aplicar paginação
+    skip = (page - 1) * limit
+    items = query.offset(skip).limit(limit).all()
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "limit": limit,
+    }
 
 
-@router.get("/trainers", response_model=List[UserSchema])
+@router.get("/trainers")
 def search_trainers(
-    q: str = Query(..., min_length=2, description="Termo de pesquisa"),
-    limit: int = Query(20, ge=1, le=100, description="Máximo de resultados"),
+    q: Optional[str] = Query(
+        None, min_length=2, description="Termo de pesquisa (opcional)"
+    ),
+    page: int = Query(1, ge=1, description="Página atual"),
+    limit: int = Query(20, ge=1, le=100, description="Items por página"),
     db: Session = Depends(get_db),
     current_user: User = Depends(deps.get_current_admin_or_secretaria),
 ):
     """
-    Pesquisa professores por nome ou email.
+    Lista/Pesquisa professores com paginação.
     Apenas Admin e Secretaria.
     """
-    search_term = f"%{q}%"
-    trainers = (
-        db.query(User)
-        .filter(
-            User.role == "professor",
+    query = db.query(User).filter(User.role == "professor")
+
+    # Aplicar filtro de pesquisa se fornecido
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
             or_(
                 User.full_name.ilike(search_term),
                 User.email.ilike(search_term),
-            ),
+            )
         )
-        .limit(limit)
-        .all()
-    )
-    return trainers
+
+    # Contar total
+    total = query.count()
+    pages = math.ceil(total / limit) if total > 0 else 1
+
+    # Aplicar paginação
+    skip = (page - 1) * limit
+    items = query.offset(skip).limit(limit).all()
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "limit": limit,
+    }
