@@ -32,3 +32,6 @@ alembic
 
 # Pydantic (incluído com fastapi, mas explícito para clareza)
 pydantic
+
+# ChatBot OpenAI
+openai
