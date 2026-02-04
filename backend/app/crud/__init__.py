@@ -25,6 +25,7 @@ from app.crud.lesson import lesson
 from app.crud.module_grade import module_grade
 from app.crud.trainer_availability import trainer_availability
 from app.crud.user_file import user_file
+from app.crud.chat_log import chat_log
 
 # User CRUD mantém a API original (funções, não classe)
 # Para consistência futura, pode ser migrado para o padrão de classe
@@ -40,5 +41,6 @@ __all__ = [
     "module_grade",
     "trainer_availability",
     "user_file",
+    "chat_log",
     "user",
 ]
