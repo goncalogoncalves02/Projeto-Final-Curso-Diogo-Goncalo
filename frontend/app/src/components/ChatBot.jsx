@@ -84,7 +84,7 @@ export default function ChatBot() {
       {/* Botão flutuante */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-800 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-blue-700 hover:scale-110 transition-all z-50"
         aria-label="Abrir chat"
       >
         {isOpen ? (
@@ -120,9 +120,9 @@ export default function ChatBot() {
 
       {/* Janela do chat */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 border border-gray-200 dark:border-gray-700">
+        <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 border border-gray-200">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
+          <div className="bg-blue-800 p-4 text-white">
             <h3 className="font-semibold">Assistente ATEC</h3>
             <p className="text-sm opacity-80">Sempre disponível para ajudar</p>
           </div>
@@ -138,7 +138,7 @@ export default function ChatBot() {
                   className={`max-w-[80%] rounded-2xl px-4 py-2 ${
                     msg.role === "user"
                       ? "bg-blue-600 text-white rounded-br-md"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-md"
+                      : "bg-gray-100 text-gray-900 rounded-bl-md"
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -147,7 +147,7 @@ export default function ChatBot() {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-md px-4 py-2">
+                <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-2">
                   <div className="flex space-x-2">
                     <div
                       className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
@@ -171,7 +171,7 @@ export default function ChatBot() {
           {/* Input */}
           <form
             onSubmit={sendMessage}
-            className="p-4 border-t dark:border-gray-700"
+            className="p-4 border-t border-gray-200"
           >
             <div className="flex space-x-2">
               <input
@@ -179,7 +179,7 @@ export default function ChatBot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Escreve a tua mensagem..."
-                className="flex-1 rounded-full px-4 py-2 border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 rounded-full px-4 py-2 border border-gray-300 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isLoading}
               />
               <button
