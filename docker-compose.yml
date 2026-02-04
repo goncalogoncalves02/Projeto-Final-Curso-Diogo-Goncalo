@@ -35,6 +35,7 @@ services:
       - MAIL_SERVER=${MAIL_SERVER:-}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
