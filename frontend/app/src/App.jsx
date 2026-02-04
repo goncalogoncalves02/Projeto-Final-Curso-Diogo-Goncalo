@@ -25,6 +25,7 @@ import Availability from "./pages/Availability";
 import ScheduleView from "./pages/ScheduleView";
 import Profile from "./pages/Profile";
 import Layout from "./components/Layout";
+import ChatBot from "./components/ChatBot";
 import "./App.css";
 
 // Componente para rotas protegidas
@@ -33,6 +34,12 @@ const PrivateRoute = ({ children }) => {
 
   if (loading) return <div>A carregar...</div>;
   return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+// Componente interno para mostrar ChatBot apenas quando autenticado
+const ChatBotWrapper = () => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <ChatBot /> : null;
 };
 
 function App() {
@@ -73,6 +80,7 @@ function App() {
             <Route path="/schedule" element={<ScheduleView />} />
           </Route>
         </Routes>
+        <ChatBotWrapper />
       </Router>
     </AuthProvider>
   );
