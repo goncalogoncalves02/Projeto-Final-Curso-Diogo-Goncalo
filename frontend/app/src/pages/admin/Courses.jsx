@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import Pagination from "../../components/Pagination";
+import SearchBar from "../../components/SearchBar";
+import TableLoading from "../../components/TableLoading";
+import TableEmpty from "../../components/TableEmpty";
 
 const AdminCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -17,6 +20,9 @@ const AdminCourses = () => {
   const [totalItems, setTotalItems] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
+  // Estado de pesquisa
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Estados do form para editar e criar (inicializado com valores default)
   const initialFormState = {
     name: "",
@@ -30,12 +36,14 @@ const AdminCourses = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [createFormData, setCreateFormData] = useState(initialFormState);
 
-  const fetchCourses = useCallback(async (page = 1) => {
+  const fetchCourses = useCallback(async (page = 1, query = "") => {
     try {
       setLoading(true);
-      const response = await api.get("/courses/", {
-        params: { page, limit: ITEMS_PER_PAGE },
-      });
+      const params = { page, limit: ITEMS_PER_PAGE };
+      if (query && query.length >= 2) {
+        params.q = query;
+      }
+      const response = await api.get("/courses/", { params });
       setCourses(response.data.items || []);
       setTotalPages(response.data.pages || 1);
       setTotalItems(response.data.total || 0);
@@ -50,11 +58,17 @@ const AdminCourses = () => {
   }, []);
 
   useEffect(() => {
-    fetchCourses(1);
+    fetchCourses(1, searchQuery);
   }, [fetchCourses]);
 
   const handlePageChange = (newPage) => {
-    fetchCourses(newPage);
+    fetchCourses(newPage, searchQuery);
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    fetchCourses(1, query);
   };
 
   const handleDeleteClick = (course) => {
@@ -252,7 +266,7 @@ const AdminCourses = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">A carregar...</div>;
+  // Loading is now handled inline, not with early return
 
   return (
     <div className="container mx-auto p-6">
@@ -272,6 +286,14 @@ const AdminCourses = () => {
             Voltar à Dashboard
           </Link>
         </div>
+      </div>
+
+      {/* Barra de Pesquisa */}
+      <div className="mb-4">
+        <SearchBar
+          onSearch={handleSearch}
+          placeholder="Pesquisar por nome ou área..."
+        />
       </div>
 
       {error && (
@@ -303,29 +325,34 @@ const AdminCourses = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {courses.map((course) => (
-              <tr key={course.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  #{course.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {course.name}
-                  </div>
-                  <div className="text-sm text-gray-500 truncate w-64">
-                    {course.description}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {course.area}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div>Início: {course.start_date}</div>
-                  <div>Fim: {course.end_date}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+            {loading ? (
+              <TableLoading colSpan={6} />
+            ) : courses.length === 0 ? (
+              <TableEmpty colSpan={6} message="Nenhum curso encontrado." />
+            ) : (
+              courses.map((course) => (
+                <tr key={course.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    #{course.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {course.name}
+                    </div>
+                    <div className="text-sm text-gray-500 truncate w-64">
+                      {course.description}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {course.area}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div>Início: {course.start_date}</div>
+                    <div>Fim: {course.end_date}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                       ${
                         course.status === "active"
                           ? "bg-green-100 text-green-800"
@@ -335,38 +362,39 @@ const AdminCourses = () => {
                               ? "bg-red-100 text-red-800"
                               : "bg-blue-100 text-blue-800"
                       }`}
-                  >
-                    {course.status === "active"
-                      ? "Ativo"
-                      : course.status === "finished"
-                        ? "Terminado"
-                        : course.status === "cancelled"
-                          ? "Cancelado"
-                          : "Planeado"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleManageModulesClick(course)}
-                    className="text-teal-600 hover:text-teal-900 mr-4 font-bold"
-                  >
-                    Módulos
-                  </button>
-                  <button
-                    onClick={() => handleEditClick(course)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(course)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Apagar
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    >
+                      {course.status === "active"
+                        ? "Ativo"
+                        : course.status === "finished"
+                          ? "Terminado"
+                          : course.status === "cancelled"
+                            ? "Cancelado"
+                            : "Planeado"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleManageModulesClick(course)}
+                      className="text-teal-600 hover:text-teal-900 mr-4 font-bold"
+                    >
+                      Módulos
+                    </button>
+                    <button
+                      onClick={() => handleEditClick(course)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(course)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Apagar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
