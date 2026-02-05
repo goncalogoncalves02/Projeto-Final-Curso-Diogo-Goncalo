@@ -1,6 +1,8 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List, Optional, Any
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
+import math
 from app.api import deps
 from app.crud import user as user_crud
 from app.schemas import user as user_schema
@@ -13,18 +15,44 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[user_schema.User])
+@router.get("/")
 def read_users(
-    skip: int = 0,
-    limit: int = 100,
+    q: Optional[str] = Query(None, min_length=2, description="Termo de pesquisa"),
+    page: int = Query(1, ge=1, description="Página atual"),
+    limit: int = Query(20, ge=1, le=100, description="Items por página"),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_superuser),
 ):
     """
-    Lista todos os utilizadores (Apenas Admin).
+    Lista todos os utilizadores com paginação (Apenas Admin).
     """
-    users = user_crud.get_users(db, skip=skip, limit=limit)
-    return users
+    query = db.query(User)
+
+    # Aplicar filtro de pesquisa se fornecido
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
+            or_(
+                User.full_name.ilike(search_term),
+                User.email.ilike(search_term),
+            )
+        )
+
+    # Contar total
+    total = query.count()
+    pages = math.ceil(total / limit) if total > 0 else 1
+
+    # Aplicar paginação
+    skip = (page - 1) * limit
+    items = query.offset(skip).limit(limit).all()
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "limit": limit,
+    }
 
 
 @router.post("/", response_model=user_schema.User)
