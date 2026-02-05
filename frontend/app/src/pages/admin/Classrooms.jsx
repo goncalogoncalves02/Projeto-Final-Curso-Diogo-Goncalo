@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import Pagination from "../../components/Pagination";
+import SearchBar from "../../components/SearchBar";
+import TableLoading from "../../components/TableLoading";
+import TableEmpty from "../../components/TableEmpty";
 
 const AdminClassrooms = () => {
   const [classrooms, setClassrooms] = useState([]);
@@ -17,6 +20,9 @@ const AdminClassrooms = () => {
   const [totalItems, setTotalItems] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
+  // Estado de pesquisa
+  const [searchQuery, setSearchQuery] = useState("");
+
   const initialFormState = {
     name: "",
     type: "",
@@ -27,12 +33,14 @@ const AdminClassrooms = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [createFormData, setCreateFormData] = useState(initialFormState);
 
-  const fetchClassrooms = useCallback(async (page = 1) => {
+  const fetchClassrooms = useCallback(async (page = 1, query = "") => {
     try {
       setLoading(true);
-      const response = await api.get("/classrooms/", {
-        params: { page, limit: ITEMS_PER_PAGE },
-      });
+      const params = { page, limit: ITEMS_PER_PAGE };
+      if (query && query.length >= 2) {
+        params.q = query;
+      }
+      const response = await api.get("/classrooms/", { params });
       setClassrooms(response.data.items || []);
       setTotalPages(response.data.pages || 1);
       setTotalItems(response.data.total || 0);
@@ -47,11 +55,17 @@ const AdminClassrooms = () => {
   }, []);
 
   useEffect(() => {
-    fetchClassrooms(1);
+    fetchClassrooms(1, searchQuery);
   }, [fetchClassrooms]);
 
   const handlePageChange = (newPage) => {
-    fetchClassrooms(newPage);
+    fetchClassrooms(newPage, searchQuery);
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    fetchClassrooms(1, query);
   };
 
   const handleDeleteClick = (classroom) => {
@@ -109,7 +123,7 @@ const AdminClassrooms = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">A carregar...</div>;
+  // Loading is now handled inline, not with early return
 
   return (
     <div className="container mx-auto p-6">
@@ -129,6 +143,14 @@ const AdminClassrooms = () => {
             Voltar à Dashboard
           </Link>
         </div>
+      </div>
+
+      {/* Barra de Pesquisa */}
+      <div className="mb-4">
+        <SearchBar
+          onSearch={handleSearch}
+          placeholder="Pesquisar por nome ou tipo..."
+        />
       </div>
 
       {error && (
@@ -160,43 +182,49 @@ const AdminClassrooms = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {classrooms.map((classroom) => (
-              <tr key={classroom.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  #{classroom.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                  {classroom.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {classroom.type || "-"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {classroom.capacity} lugares
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${classroom.is_available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-                  >
-                    {classroom.is_available ? "Disponível" : "Indisponível"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleEditClick(classroom)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(classroom)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Apagar
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {loading ? (
+              <TableLoading colSpan={6} />
+            ) : classrooms.length === 0 ? (
+              <TableEmpty colSpan={6} message="Nenhuma sala encontrada." />
+            ) : (
+              classrooms.map((classroom) => (
+                <tr key={classroom.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    #{classroom.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                    {classroom.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {classroom.type || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {classroom.capacity} lugares
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${classroom.is_available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                    >
+                      {classroom.is_available ? "Disponível" : "Indisponível"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleEditClick(classroom)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(classroom)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Apagar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
