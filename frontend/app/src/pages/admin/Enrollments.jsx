@@ -28,11 +28,7 @@ const AdminEnrollments = () => {
           api.get("/users/?limit=100"),
         ]);
         setCourses(coursesRes.data);
-        setUsers(
-          usersRes.data.filter(
-            (u) => u.role === "estudante" || u.role === "student" || true,
-          ),
-        );
+        setUsers(usersRes.data.filter((u) => u.role === "estudante"));
       } catch (err) {
         console.log(err);
         console.error("Failed to load initial data");
