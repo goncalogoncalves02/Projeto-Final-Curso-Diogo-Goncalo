@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import UserFilesModal from "../../components/UserFilesModal";
+import Pagination from "../../components/Pagination";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -11,6 +12,12 @@ const AdminUsers = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [userFilesView, setUserFilesView] = useState(null); // { id, full_name }
+
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const ITEMS_PER_PAGE = 20;
 
   // Estados do form para editar
   const [formData, setFormData] = useState({
@@ -32,28 +39,32 @@ const AdminUsers = () => {
     is_2fa_enabled: false,
   });
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchUsers = async () => {
-      try {
-        const response = await api.get("/users/");
-        setUsers(response.data);
-        setLoading(false);
-      } catch (error) {
-        if (error.name !== "CanceledError" && error.code !== "ERR_CANCELED") {
-          setError("Erro ao carregar utilizadores.");
-          setLoading(false);
-        }
+  const fetchUsers = useCallback(async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await api.get("/users/", {
+        params: { page, limit: ITEMS_PER_PAGE },
+      });
+      setUsers(response.data.items || []);
+      setTotalPages(response.data.pages || 1);
+      setTotalItems(response.data.total || 0);
+      setCurrentPage(response.data.page || 1);
+    } catch (err) {
+      if (err.name !== "CanceledError" && err.code !== "ERR_CANCELED") {
+        setError("Erro ao carregar utilizadores.");
       }
-    };
-
-    fetchUsers();
-
-    return () => {
-      controller.abort();
-    };
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUsers(1);
+  }, [fetchUsers]);
+
+  const handlePageChange = (newPage) => {
+    fetchUsers(newPage);
+  };
 
   const handleDeleteClick = (user) => {
     setUserToDelete(user);
@@ -237,6 +248,15 @@ const AdminUsers = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Paginação */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={handlePageChange}
+      />
 
       {/* Modal de Edição */}
       {editingUser && (
