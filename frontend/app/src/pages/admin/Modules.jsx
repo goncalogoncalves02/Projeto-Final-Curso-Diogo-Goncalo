@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import Pagination from "../../components/Pagination";
+import SearchBar from "../../components/SearchBar";
+import TableLoading from "../../components/TableLoading";
+import TableEmpty from "../../components/TableEmpty";
 
 const AdminModules = () => {
   const [modules, setModules] = useState([]);
@@ -17,6 +20,9 @@ const AdminModules = () => {
   const [totalItems, setTotalItems] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
+  // Estado de pesquisa
+  const [searchQuery, setSearchQuery] = useState("");
+
   const initialFormState = {
     name: "",
     area: "",
@@ -26,12 +32,14 @@ const AdminModules = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [createFormData, setCreateFormData] = useState(initialFormState);
 
-  const fetchModules = useCallback(async (page = 1) => {
+  const fetchModules = useCallback(async (page = 1, query = "") => {
     try {
       setLoading(true);
-      const response = await api.get("/modules/", {
-        params: { page, limit: ITEMS_PER_PAGE },
-      });
+      const params = { page, limit: ITEMS_PER_PAGE };
+      if (query && query.length >= 2) {
+        params.q = query;
+      }
+      const response = await api.get("/modules/", { params });
       setModules(response.data.items || []);
       setTotalPages(response.data.pages || 1);
       setTotalItems(response.data.total || 0);
@@ -46,11 +54,17 @@ const AdminModules = () => {
   }, []);
 
   useEffect(() => {
-    fetchModules(1);
+    fetchModules(1, searchQuery);
   }, [fetchModules]);
 
   const handlePageChange = (newPage) => {
-    fetchModules(newPage);
+    fetchModules(newPage, searchQuery);
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    fetchModules(1, query);
   };
 
   const handleDeleteClick = (module) => {
@@ -102,7 +116,7 @@ const AdminModules = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">A carregar...</div>;
+  // Loading is now handled inline, not with early return
 
   return (
     <div className="container mx-auto p-6">
@@ -124,6 +138,14 @@ const AdminModules = () => {
             Voltar à Dashboard
           </Link>
         </div>
+      </div>
+
+      {/* Barra de Pesquisa */}
+      <div className="mb-4">
+        <SearchBar
+          onSearch={handleSearch}
+          placeholder="Pesquisar por nome ou área..."
+        />
       </div>
 
       {error && (
@@ -152,36 +174,42 @@ const AdminModules = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {modules.map((module) => (
-              <tr key={module.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  #{module.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {module.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {module.area || "-"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {module.default_duration_hours}h
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleEditClick(module)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(module)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Apagar
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {loading ? (
+              <TableLoading colSpan={5} />
+            ) : modules.length === 0 ? (
+              <TableEmpty colSpan={5} message="Nenhum módulo encontrado." />
+            ) : (
+              modules.map((module) => (
+                <tr key={module.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    #{module.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {module.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {module.area || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {module.default_duration_hours}h
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleEditClick(module)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(module)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Apagar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
