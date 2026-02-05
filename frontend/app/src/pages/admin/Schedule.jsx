@@ -84,8 +84,8 @@ const Schedule = () => {
         api.get("/classrooms/"),
       ]);
       setLessons(lessonsRes.data);
-      setCourses(coursesRes.data);
-      setClassrooms(classroomsRes.data);
+      setCourses(coursesRes.data.items || coursesRes.data);
+      setClassrooms(classroomsRes.data.items || classroomsRes.data);
     } catch (err) {
       setError(
         "Erro ao carregar dados: " +
