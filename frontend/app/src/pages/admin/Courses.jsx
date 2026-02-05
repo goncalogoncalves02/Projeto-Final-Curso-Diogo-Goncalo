@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
+import Pagination from "../../components/Pagination";
 
 const AdminCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -9,6 +10,12 @@ const AdminCourses = () => {
   const [editingCourse, setEditingCourse] = useState(null);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const ITEMS_PER_PAGE = 20;
 
   // Estados do form para editar e criar (inicializado com valores default)
   const initialFormState = {
@@ -23,28 +30,32 @@ const AdminCourses = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [createFormData, setCreateFormData] = useState(initialFormState);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchCourses = async () => {
-      try {
-        const response = await api.get("/courses/");
-        setCourses(response.data);
-        setLoading(false);
-      } catch (error) {
-        if (error.name !== "CanceledError" && error.code !== "ERR_CANCELED") {
-          setError("Erro ao carregar cursos.");
-          setLoading(false);
-        }
+  const fetchCourses = useCallback(async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await api.get("/courses/", {
+        params: { page, limit: ITEMS_PER_PAGE },
+      });
+      setCourses(response.data.items || []);
+      setTotalPages(response.data.pages || 1);
+      setTotalItems(response.data.total || 0);
+      setCurrentPage(response.data.page || 1);
+    } catch (err) {
+      if (err.name !== "CanceledError" && err.code !== "ERR_CANCELED") {
+        setError("Erro ao carregar cursos.");
       }
-    };
-
-    fetchCourses();
-
-    return () => {
-      controller.abort();
-    };
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchCourses(1);
+  }, [fetchCourses]);
+
+  const handlePageChange = (newPage) => {
+    fetchCourses(newPage);
+  };
 
   const handleDeleteClick = (course) => {
     setCourseToDelete(course);
@@ -128,9 +139,13 @@ const AdminCourses = () => {
           api.get("/classrooms/?limit=100"),
         ]);
       setCourseModules(cModulesRes.data);
-      setAvailableModules(allModulesRes.data);
-      setTrainers(usersRes.data.filter((u) => u.role === "professor"));
-      setClassrooms(classroomsRes.data);
+      setAvailableModules(allModulesRes.data.items || allModulesRes.data);
+      setTrainers(
+        (usersRes.data.items || usersRes.data).filter(
+          (u) => u.role === "professor",
+        ),
+      );
+      setClassrooms(classroomsRes.data.items || classroomsRes.data);
     } catch (err) {
       console.error(err);
       alert("Erro ao carregar dados dos módulos.");
@@ -355,6 +370,15 @@ const AdminCourses = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Paginação */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={handlePageChange}
+      />
 
       {/* Modal de Gestão de Módulos */}
       {managingCourse && (
