@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+/* ============================================
+   React Big Calendar - Customizações
+   ============================================ */
+
+/* Margens entre eventos simultâneos */
+.rbc-event {
+  margin-right: 2px !important;
+  margin-left: 1px !important;
+}
+
+/* Garantir que texto não fica cortado */
+.rbc-event-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+/* Padding interno dos eventos */
+.rbc-event-label {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Aumentar espaçamento na vista de semana */
+.rbc-time-content > .rbc-day-slot > .rbc-events-container {
+  margin-right: 5px;
+}
+
+/* Melhorar legibilidade em eventos pequenos */
+.rbc-event.rbc-selected {
+  outline: 2px solid #1e40af;
+  outline-offset: 1px;
+}
