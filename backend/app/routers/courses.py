@@ -1,29 +1,64 @@
-from typing import List, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional, Any
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
+import math
 from app.db.session import get_db
 from app.schemas.course import Course, CourseCreate, CourseUpdate
-from app.schemas.course_module import CourseModule, CourseModuleCreate, CourseModuleUpdate
+from app.schemas.course_module import (
+    CourseModule,
+    CourseModuleCreate,
+    CourseModuleUpdate,
+)
 from app.api import deps
 from app.crud import course as course_crud
 from app.crud import course_module as course_module_crud
+from app.models.course import Course as CourseModel
 
 router = APIRouter()
 
 
 # ============== CRUD de Cursos ==============
 
-@router.get("/", response_model=List[Course])
+
+@router.get("/")
 def read_courses(
+    q: Optional[str] = Query(None, min_length=2, description="Termo de pesquisa"),
+    page: int = Query(1, ge=1, description="Página atual"),
+    limit: int = Query(20, ge=1, le=100, description="Items por página"),
     db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 100,
     current_user: Any = Depends(deps.get_current_active_user),
 ):
     """
-    Lista todos os cursos.
+    Lista todos os cursos com paginação.
     """
-    return course_crud.get_multi(db, skip=skip, limit=limit)
+    query = db.query(CourseModel)
+
+    # Aplicar filtro de pesquisa se fornecido
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
+            or_(
+                CourseModel.name.ilike(search_term),
+                CourseModel.area.ilike(search_term),
+            )
+        )
+
+    # Contar total
+    total = query.count()
+    pages = math.ceil(total / limit) if total > 0 else 1
+
+    # Aplicar paginação
+    skip = (page - 1) * limit
+    items = query.offset(skip).limit(limit).all()
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "limit": limit,
+    }
 
 
 @router.post("/", response_model=Course)
@@ -76,6 +111,7 @@ def delete_course(
 
 # ============== Sub-resources: Módulos do Curso ==============
 
+
 @router.get("/{course_id}/modules", response_model=List[CourseModule])
 def read_course_modules(
     course_id: int,
@@ -106,7 +142,9 @@ def add_module_to_course(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    return course_module_crud.create_for_course(db, course_id=course_id, obj_in=course_module_in)
+    return course_module_crud.create_for_course(
+        db, course_id=course_id, obj_in=course_module_in
+    )
 
 
 @router.put("/{course_id}/modules/{module_id}", response_model=CourseModule)
@@ -120,7 +158,9 @@ def update_course_module(
     """
     Atualiza um módulo no curso (professor, sala, ordem, etc).
     """
-    course_module = course_module_crud.get_by_course_and_id(db, course_id=course_id, id=module_id)
+    course_module = course_module_crud.get_by_course_and_id(
+        db, course_id=course_id, id=module_id
+    )
     if not course_module:
         raise HTTPException(status_code=404, detail="Course module not found")
 
@@ -137,7 +177,9 @@ def delete_course_module(
     """
     Remove um módulo de um curso.
     """
-    course_module = course_module_crud.get_by_course_and_id(db, course_id=course_id, id=module_id)
+    course_module = course_module_crud.get_by_course_and_id(
+        db, course_id=course_id, id=module_id
+    )
     if not course_module:
         raise HTTPException(status_code=404, detail="Course module not found")
 
