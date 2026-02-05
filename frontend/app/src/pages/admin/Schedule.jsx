@@ -282,8 +282,9 @@ const Schedule = () => {
         borderLeft: `4px solid ${color.border}`,
         borderRadius: "4px",
         color: "white",
-        fontSize: "12px",
-        padding: "2px 6px",
+        fontSize: "11px",
+        padding: "2px 4px",
+        overflow: "hidden",
       },
     };
   };
