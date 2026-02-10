@@ -156,7 +156,20 @@ const Sidebar = () => {
       {/* User & Footer */}
       <div className="p-4 border-t border-blue-700 bg-blue-900">
         <div className="flex items-center mb-4">
-          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+          {user?.avatar_url ? (
+            <img
+              src={`http://localhost:8000/${user.avatar_url}`}
+              alt="Avatar"
+              className="w-10 h-10 rounded-full object-cover"
+              onError={(e) => {
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "flex";
+              }}
+            />
+          ) : null}
+          <div
+            className={`w-10 h-10 rounded-full bg-blue-500 items-center justify-center text-white font-bold ${user?.avatar_url ? "hidden" : "flex"}`}
+          >
             {user?.full_name?.charAt(0) || user?.email?.charAt(0) || "U"}
           </div>
           <div className="ml-3 overflow-hidden">
