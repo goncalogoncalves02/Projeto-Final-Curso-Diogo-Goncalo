@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
+import Pagination from "../../components/Pagination";
+import SearchBar from "../../components/SearchBar";
+import TableLoading from "../../components/TableLoading";
+import TableEmpty from "../../components/TableEmpty";
 
 const AdminCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -9,6 +13,15 @@ const AdminCourses = () => {
   const [editingCourse, setEditingCourse] = useState(null);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const ITEMS_PER_PAGE = 20;
+
+  // Estado de pesquisa
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Estados do form para editar e criar (inicializado com valores default)
   const initialFormState = {
@@ -23,28 +36,40 @@ const AdminCourses = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [createFormData, setCreateFormData] = useState(initialFormState);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchCourses = async () => {
-      try {
-        const response = await api.get("/courses/");
-        setCourses(response.data);
-        setLoading(false);
-      } catch (error) {
-        if (error.name !== "CanceledError" && error.code !== "ERR_CANCELED") {
-          setError("Erro ao carregar cursos.");
-          setLoading(false);
-        }
+  const fetchCourses = useCallback(async (page = 1, query = "") => {
+    try {
+      setLoading(true);
+      const params = { page, limit: ITEMS_PER_PAGE };
+      if (query && query.length >= 2) {
+        params.q = query;
       }
-    };
-
-    fetchCourses();
-
-    return () => {
-      controller.abort();
-    };
+      const response = await api.get("/courses/", { params });
+      setCourses(response.data.items || []);
+      setTotalPages(response.data.pages || 1);
+      setTotalItems(response.data.total || 0);
+      setCurrentPage(response.data.page || 1);
+    } catch (err) {
+      if (err.name !== "CanceledError" && err.code !== "ERR_CANCELED") {
+        setError("Erro ao carregar cursos.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchCourses(1, searchQuery);
+  }, [fetchCourses]);
+
+  const handlePageChange = (newPage) => {
+    fetchCourses(newPage, searchQuery);
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    fetchCourses(1, query);
+  };
 
   const handleDeleteClick = (course) => {
     setCourseToDelete(course);
@@ -128,9 +153,13 @@ const AdminCourses = () => {
           api.get("/classrooms/?limit=100"),
         ]);
       setCourseModules(cModulesRes.data);
-      setAvailableModules(allModulesRes.data);
-      setTrainers(usersRes.data.filter((u) => u.role === "professor"));
-      setClassrooms(classroomsRes.data);
+      setAvailableModules(allModulesRes.data.items || allModulesRes.data);
+      setTrainers(
+        (usersRes.data.items || usersRes.data).filter(
+          (u) => u.role === "professor",
+        ),
+      );
+      setClassrooms(classroomsRes.data.items || classroomsRes.data);
     } catch (err) {
       console.error(err);
       alert("Erro ao carregar dados dos módulos.");
@@ -237,7 +266,7 @@ const AdminCourses = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">A carregar...</div>;
+  // Loading is now handled inline, not with early return
 
   return (
     <div className="container mx-auto p-6">
@@ -257,6 +286,14 @@ const AdminCourses = () => {
             Voltar à Dashboard
           </Link>
         </div>
+      </div>
+
+      {/* Barra de Pesquisa */}
+      <div className="mb-4">
+        <SearchBar
+          onSearch={handleSearch}
+          placeholder="Pesquisar por nome ou área..."
+        />
       </div>
 
       {error && (
@@ -288,29 +325,34 @@ const AdminCourses = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {courses.map((course) => (
-              <tr key={course.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  #{course.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {course.name}
-                  </div>
-                  <div className="text-sm text-gray-500 truncate w-64">
-                    {course.description}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {course.area}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div>Início: {course.start_date}</div>
-                  <div>Fim: {course.end_date}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+            {loading ? (
+              <TableLoading colSpan={6} />
+            ) : courses.length === 0 ? (
+              <TableEmpty colSpan={6} message="Nenhum curso encontrado." />
+            ) : (
+              courses.map((course) => (
+                <tr key={course.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    #{course.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {course.name}
+                    </div>
+                    <div className="text-sm text-gray-500 truncate w-64">
+                      {course.description}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {course.area}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div>Início: {course.start_date}</div>
+                    <div>Fim: {course.end_date}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                       ${
                         course.status === "active"
                           ? "bg-green-100 text-green-800"
@@ -320,41 +362,51 @@ const AdminCourses = () => {
                               ? "bg-red-100 text-red-800"
                               : "bg-blue-100 text-blue-800"
                       }`}
-                  >
-                    {course.status === "active"
-                      ? "Ativo"
-                      : course.status === "finished"
-                        ? "Terminado"
-                        : course.status === "cancelled"
-                          ? "Cancelado"
-                          : "Planeado"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleManageModulesClick(course)}
-                    className="text-teal-600 hover:text-teal-900 mr-4 font-bold"
-                  >
-                    Módulos
-                  </button>
-                  <button
-                    onClick={() => handleEditClick(course)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(course)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Apagar
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    >
+                      {course.status === "active"
+                        ? "Ativo"
+                        : course.status === "finished"
+                          ? "Terminado"
+                          : course.status === "cancelled"
+                            ? "Cancelado"
+                            : "Planeado"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleManageModulesClick(course)}
+                      className="text-teal-600 hover:text-teal-900 mr-4 font-bold"
+                    >
+                      Módulos
+                    </button>
+                    <button
+                      onClick={() => handleEditClick(course)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(course)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Apagar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Paginação */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={handlePageChange}
+      />
 
       {/* Modal de Gestão de Módulos */}
       {managingCourse && (

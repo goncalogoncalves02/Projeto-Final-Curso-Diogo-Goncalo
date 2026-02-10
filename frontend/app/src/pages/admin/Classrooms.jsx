@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
+import Pagination from "../../components/Pagination";
+import SearchBar from "../../components/SearchBar";
+import TableLoading from "../../components/TableLoading";
+import TableEmpty from "../../components/TableEmpty";
 
 const AdminClassrooms = () => {
   const [classrooms, setClassrooms] = useState([]);
@@ -9,6 +13,15 @@ const AdminClassrooms = () => {
   const [editingClassroom, setEditingClassroom] = useState(null);
   const [classroomToDelete, setClassroomToDelete] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const ITEMS_PER_PAGE = 20;
+
+  // Estado de pesquisa
+  const [searchQuery, setSearchQuery] = useState("");
 
   const initialFormState = {
     name: "",
@@ -20,28 +33,40 @@ const AdminClassrooms = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [createFormData, setCreateFormData] = useState(initialFormState);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchClassrooms = async () => {
-      try {
-        const response = await api.get("/classrooms/");
-        setClassrooms(response.data);
-        setLoading(false);
-      } catch (error) {
-        if (error.name !== "CanceledError" && error.code !== "ERR_CANCELED") {
-          setError("Erro ao carregar salas.");
-          setLoading(false);
-        }
+  const fetchClassrooms = useCallback(async (page = 1, query = "") => {
+    try {
+      setLoading(true);
+      const params = { page, limit: ITEMS_PER_PAGE };
+      if (query && query.length >= 2) {
+        params.q = query;
       }
-    };
-
-    fetchClassrooms();
-
-    return () => {
-      controller.abort();
-    };
+      const response = await api.get("/classrooms/", { params });
+      setClassrooms(response.data.items || []);
+      setTotalPages(response.data.pages || 1);
+      setTotalItems(response.data.total || 0);
+      setCurrentPage(response.data.page || 1);
+    } catch (err) {
+      if (err.name !== "CanceledError" && err.code !== "ERR_CANCELED") {
+        setError("Erro ao carregar salas.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchClassrooms(1, searchQuery);
+  }, [fetchClassrooms]);
+
+  const handlePageChange = (newPage) => {
+    fetchClassrooms(newPage, searchQuery);
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    fetchClassrooms(1, query);
+  };
 
   const handleDeleteClick = (classroom) => {
     setClassroomToDelete(classroom);
@@ -83,22 +108,27 @@ const AdminClassrooms = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.put(`/classrooms/${editingClassroom.id}`, formData);
-      setClassrooms(classrooms.map((c) => (c.id === editingClassroom.id ? response.data : c)));
+      const response = await api.put(
+        `/classrooms/${editingClassroom.id}`,
+        formData,
+      );
+      setClassrooms(
+        classrooms.map((c) =>
+          c.id === editingClassroom.id ? response.data : c,
+        ),
+      );
       setEditingClassroom(null);
     } catch {
       alert("Erro ao atualizar sala.");
     }
   };
 
-  if (loading) return <div className="p-8 text-center">A carregar...</div>;
+  // Loading is now handled inline, not with early return
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Gestão de Salas
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-800">Gestão de Salas</h1>
         <div className="space-x-4">
           <button
             onClick={() => setIsCreating(true)}
@@ -115,6 +145,14 @@ const AdminClassrooms = () => {
         </div>
       </div>
 
+      {/* Barra de Pesquisa */}
+      <div className="mb-4">
+        <SearchBar
+          onSearch={handleSearch}
+          placeholder="Pesquisar por nome ou tipo..."
+        />
+      </div>
+
       {error && (
         <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
       )}
@@ -123,69 +161,133 @@ const AdminClassrooms = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome da Sala</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacidade</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponibilidade</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Nome da Sala
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tipo
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Capacidade
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Disponibilidade
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ações
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {classrooms.map((classroom) => (
-              <tr key={classroom.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{classroom.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{classroom.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{classroom.type || "-"}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{classroom.capacity} lugares</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${classroom.is_available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                    {classroom.is_available ? "Disponível" : "Indisponível"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onClick={() => handleEditClick(classroom)} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
-                  <button onClick={() => handleDeleteClick(classroom)} className="text-red-600 hover:text-red-900">Apagar</button>
-                </td>
-              </tr>
-            ))}
+            {loading ? (
+              <TableLoading colSpan={6} />
+            ) : classrooms.length === 0 ? (
+              <TableEmpty colSpan={6} message="Nenhuma sala encontrada." />
+            ) : (
+              classrooms.map((classroom) => (
+                <tr key={classroom.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    #{classroom.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                    {classroom.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {classroom.type || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {classroom.capacity} lugares
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${classroom.is_available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                    >
+                      {classroom.is_available ? "Disponível" : "Indisponível"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleEditClick(classroom)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(classroom)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Apagar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Paginação */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={handlePageChange}
+      />
 
       {/* Modal de Edição */}
       {editingClassroom && (
         <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
           <div className="bg-white p-8 rounded-lg shadow-xl w-96">
-            <h2 className="text-xl font-bold mb-4">Editar Sala #{editingClassroom.id}</h2>
+            <h2 className="text-xl font-bold mb-4">
+              Editar Sala #{editingClassroom.id}
+            </h2>
             <form onSubmit={handleUpdate}>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Nome</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Nome
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Tipo</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Tipo
+                </label>
                 <input
                   type="text"
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, type: e.target.value })
+                  }
                   placeholder="Ex: Informática, Teórica"
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Capacidade</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Capacidade
+                </label>
                 <input
                   type="number"
                   required
                   value={formData.capacity}
-                  onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      capacity: parseInt(e.target.value) || 0,
+                    })
+                  }
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
               </div>
@@ -194,7 +296,12 @@ const AdminClassrooms = () => {
                   <input
                     type="checkbox"
                     checked={formData.is_available}
-                    onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        is_available: e.target.checked,
+                      })
+                    }
                     className="mr-2"
                   />
                   <span className="text-sm">Sala Disponível</span>
@@ -209,7 +316,10 @@ const AdminClassrooms = () => {
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
                   Guardar
                 </button>
               </div>
@@ -225,32 +335,53 @@ const AdminClassrooms = () => {
             <h2 className="text-xl font-bold mb-4">Nova Sala</h2>
             <form onSubmit={handleCreate}>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Nome</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Nome
+                </label>
                 <input
                   type="text"
                   required
                   value={createFormData.name}
-                  onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })}
+                  onChange={(e) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      name: e.target.value,
+                    })
+                  }
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Tipo</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Tipo
+                </label>
                 <input
                   type="text"
                   value={createFormData.type}
-                  onChange={(e) => setCreateFormData({ ...createFormData, type: e.target.value })}
+                  onChange={(e) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      type: e.target.value,
+                    })
+                  }
                   placeholder="Ex: Informática, Teórica"
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Capacidade</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Capacidade
+                </label>
                 <input
                   type="number"
                   required
                   value={createFormData.capacity}
-                  onChange={(e) => setCreateFormData({ ...createFormData, capacity: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      capacity: parseInt(e.target.value) || 0,
+                    })
+                  }
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
               </div>
@@ -259,7 +390,12 @@ const AdminClassrooms = () => {
                   <input
                     type="checkbox"
                     checked={createFormData.is_available}
-                    onChange={(e) => setCreateFormData({ ...createFormData, is_available: e.target.checked })}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        is_available: e.target.checked,
+                      })
+                    }
                     className="mr-2"
                   />
                   <span className="text-sm">Sala Disponível</span>
@@ -274,7 +410,10 @@ const AdminClassrooms = () => {
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
                   Criar
                 </button>
               </div>
@@ -289,13 +428,29 @@ const AdminClassrooms = () => {
           <div className="bg-white p-6 rounded-lg shadow-xl w-96 transform transition-all scale-100">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg
+                  className="h-6 w-6 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Eliminar Sala</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Eliminar Sala
+              </h3>
               <p className="text-sm text-gray-500 mb-6">
-                Tens a certeza que queres eliminar a sala <span className="font-bold text-gray-800">{classroomToDelete.name}</span>? <br />
+                Tens a certeza que queres eliminar a sala{" "}
+                <span className="font-bold text-gray-800">
+                  {classroomToDelete.name}
+                </span>
+                ? <br />
                 Esta ação é irreversível.
               </p>
               <div className="flex justify-center space-x-4">

@@ -1,25 +1,55 @@
-from typing import List, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional, Any
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
+import math
 from app.db.session import get_db
 from app.schemas.classroom import Classroom, ClassroomCreate, ClassroomUpdate
 from app.api import deps
 from app.crud import classroom as classroom_crud
+from app.models.classroom import Classroom as ClassroomModel
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Classroom])
+@router.get("/")
 def read_classrooms(
+    q: Optional[str] = Query(None, min_length=2, description="Termo de pesquisa"),
+    page: int = Query(1, ge=1, description="Página atual"),
+    limit: int = Query(20, ge=1, le=100, description="Items por página"),
     db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 100,
     current_user: Any = Depends(deps.get_current_active_user),
 ):
     """
-    Lista todas as salas.
+    Lista todas as salas com paginação.
     """
-    return classroom_crud.get_multi(db, skip=skip, limit=limit)
+    query = db.query(ClassroomModel)
+
+    # Aplicar filtro de pesquisa se fornecido
+    if q:
+        search_term = f"%{q}%"
+        query = query.filter(
+            or_(
+                ClassroomModel.name.ilike(search_term),
+                ClassroomModel.type.ilike(search_term),
+            )
+        )
+
+    # Contar total
+    total = query.count()
+    pages = math.ceil(total / limit) if total > 0 else 1
+
+    # Aplicar paginação
+    skip = (page - 1) * limit
+    items = query.offset(skip).limit(limit).all()
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "limit": limit,
+    }
 
 
 @router.post("/", response_model=Classroom)

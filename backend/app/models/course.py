@@ -53,8 +53,12 @@ class Course(Base):
 
     # 1. Módulos do curso (tabela de ligação CourseModule)
     # Lista de módulos que compõem esta edição do curso
-    modules = relationship("CourseModule", back_populates="course")
+    modules = relationship(
+        "CourseModule", back_populates="course", cascade="all, delete-orphan"
+    )
 
     # 2. Inscrições (Enrollment)
     # Lista de alunos inscritos nesta edição
-    enrollments = relationship("Enrollment", back_populates="course")
+    enrollments = relationship(
+        "Enrollment", back_populates="course", cascade="all, delete-orphan"
+    )

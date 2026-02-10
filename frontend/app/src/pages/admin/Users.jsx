@@ -1,7 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import UserFilesModal from "../../components/UserFilesModal";
+import Pagination from "../../components/Pagination";
+import SearchBar from "../../components/SearchBar";
+import TableLoading from "../../components/TableLoading";
+import TableEmpty from "../../components/TableEmpty";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -11,6 +15,15 @@ const AdminUsers = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [userFilesView, setUserFilesView] = useState(null); // { id, full_name }
+
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const ITEMS_PER_PAGE = 20;
+
+  // Estado de pesquisa
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Estados do form para editar
   const [formData, setFormData] = useState({
@@ -32,28 +45,40 @@ const AdminUsers = () => {
     is_2fa_enabled: false,
   });
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchUsers = async () => {
-      try {
-        const response = await api.get("/users/");
-        setUsers(response.data);
-        setLoading(false);
-      } catch (error) {
-        if (error.name !== "CanceledError" && error.code !== "ERR_CANCELED") {
-          setError("Erro ao carregar utilizadores.");
-          setLoading(false);
-        }
+  const fetchUsers = useCallback(async (page = 1, query = "") => {
+    try {
+      setLoading(true);
+      const params = { page, limit: ITEMS_PER_PAGE };
+      if (query && query.length >= 2) {
+        params.q = query;
       }
-    };
-
-    fetchUsers();
-
-    return () => {
-      controller.abort();
-    };
+      const response = await api.get("/users/", { params });
+      setUsers(response.data.items || []);
+      setTotalPages(response.data.pages || 1);
+      setTotalItems(response.data.total || 0);
+      setCurrentPage(response.data.page || 1);
+    } catch (err) {
+      if (err.name !== "CanceledError" && err.code !== "ERR_CANCELED") {
+        setError("Erro ao carregar utilizadores.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUsers(1, searchQuery);
+  }, [fetchUsers]);
+
+  const handlePageChange = (newPage) => {
+    fetchUsers(newPage, searchQuery);
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    fetchUsers(1, query);
+  };
 
   const handleDeleteClick = (user) => {
     setUserToDelete(user);
@@ -112,7 +137,7 @@ const AdminUsers = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">A carregar...</div>;
+  // Loading is now handled inline, not with early return
 
   return (
     <div className="container mx-auto p-6">
@@ -134,6 +159,14 @@ const AdminUsers = () => {
             Voltar à Dashboard
           </Link>
         </div>
+      </div>
+
+      {/* Barra de Pesquisa */}
+      <div className="mb-4">
+        <SearchBar
+          onSearch={handleSearch}
+          placeholder="Pesquisar por nome ou email..."
+        />
       </div>
 
       {error && (
@@ -162,20 +195,25 @@ const AdminUsers = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
-              <tr key={user.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  #{user.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {user.full_name || "Sem nome"}
-                  </div>
-                  <div className="text-sm text-gray-500">{user.email}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+            {loading ? (
+              <TableLoading colSpan={5} />
+            ) : users.length === 0 ? (
+              <TableEmpty colSpan={5} message="Nenhum utilizador encontrado." />
+            ) : (
+              users.map((user) => (
+                <tr key={user.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    #{user.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {user.full_name || "Sem nome"}
+                    </div>
+                    <div className="text-sm text-gray-500">{user.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                         ${
                                           user.role === "admin"
                                             ? "bg-purple-100 text-purple-800"
@@ -185,58 +223,68 @@ const AdminUsers = () => {
                                                 ? "bg-orange-100 text-orange-800"
                                                 : "bg-green-100 text-green-800"
                                         }`}
-                  >
-                    {user.role}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        ${user.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-                  >
-                    {user.is_active ? "Ativo" : "Inativo"}
-                  </span>
-                  {user.is_superuser && (
-                    <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                      SuperUser
+                    >
+                      {user.role}
                     </span>
-                  )}
-                  {user.otp_code && (
-                    <div className="mt-1 text-xs text-gray-400">
-                      OTP: {user.otp_code}
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleEditClick(user)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() =>
-                      setUserFilesView({
-                        id: user.id,
-                        full_name: user.full_name || user.email,
-                      })
-                    }
-                    className="text-green-600 hover:text-green-900 mr-4"
-                  >
-                    Ficheiros
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(user)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Apagar
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        ${user.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                    >
+                      {user.is_active ? "Ativo" : "Inativo"}
+                    </span>
+                    {user.is_superuser && (
+                      <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        SuperUser
+                      </span>
+                    )}
+                    {user.otp_code && (
+                      <div className="mt-1 text-xs text-gray-400">
+                        OTP: {user.otp_code}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleEditClick(user)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() =>
+                        setUserFilesView({
+                          id: user.id,
+                          full_name: user.full_name || user.email,
+                        })
+                      }
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      Ficheiros
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(user)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Apagar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Paginação */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={handlePageChange}
+      />
 
       {/* Modal de Edição */}
       {editingUser && (

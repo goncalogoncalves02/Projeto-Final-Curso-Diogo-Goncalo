@@ -14,6 +14,7 @@ import {
 import { pt } from "date-fns/locale";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import Pagination from "../components/Pagination";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 // Configurar localização para Português
@@ -71,6 +72,10 @@ const ScheduleView = () => {
   // Para professores: marca se está a ver todas ou filtrado por turma
   const [showingAll, setShowingAll] = useState(true);
 
+  // Paginação da tabela de aulas
+  const [tablePage, setTablePage] = useState(1);
+  const TABLE_ITEMS_PER_PAGE = 10;
+
   // Carregar dados de referência e aulas iniciais
   useEffect(() => {
     const loadData = async () => {
@@ -97,7 +102,8 @@ const ScheduleView = () => {
             .map((e) => e.course_id);
 
           const coursesRes = await api.get("/courses/");
-          const filteredCourses = coursesRes.data.filter((c) =>
+          const coursesData = coursesRes.data.items || coursesRes.data;
+          const filteredCourses = coursesData.filter((c) =>
             enrolledIds.includes(c.id),
           );
           setCourses(filteredCourses);
@@ -111,10 +117,11 @@ const ScheduleView = () => {
             api.get("/users/"),
             api.get("/classrooms/"),
           ]);
-          setCourses(coursesRes.data);
-          const profs = usersRes.data.filter((u) => u.role === "professor");
+          setCourses(coursesRes.data.items || coursesRes.data);
+          const usersData = usersRes.data.items || usersRes.data;
+          const profs = usersData.filter((u) => u.role === "professor");
           setTrainers(profs);
-          setClassrooms(classroomsRes.data);
+          setClassrooms(classroomsRes.data.items || classroomsRes.data);
         }
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
@@ -131,6 +138,7 @@ const ScheduleView = () => {
 
   // Carregar aulas quando filtros mudam
   useEffect(() => {
+    setTablePage(1); // Reset pagination when filters change
     const loadLessons = async () => {
       // Para professor: se não tem turma selecionada, carregar todas
       if (isProfessor) {
@@ -557,84 +565,107 @@ const ScheduleView = () => {
       )}
 
       {/* Tabela de detalhes */}
-      {!loading && selectedId && lessons.length > 0 && (
-        <div className="mt-6 bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b">
-            <h3 className="font-semibold text-gray-800">Lista de Aulas</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                    Data
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                    Horário
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                    Módulo
-                  </th>
-                  {viewMode !== "course" && (
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                      Curso
-                    </th>
-                  )}
-                  {viewMode !== "trainer" && (
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                      Professor
-                    </th>
-                  )}
-                  {viewMode !== "classroom" && (
-                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                      Sala
-                    </th>
-                  )}
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
-                    Duração
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {lessons.map((lesson) => (
-                  <tr key={lesson.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm">
-                      {format(new Date(lesson.date), "dd/MM/yyyy", {
-                        locale: pt,
-                      })}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {lesson.start_time?.substring(0, 5)} -{" "}
-                      {lesson.end_time?.substring(0, 5)}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium">
-                      {lesson.module_name}
-                    </td>
-                    {viewMode !== "course" && (
-                      <td className="px-4 py-3 text-sm">
-                        {lesson.course_name}
-                      </td>
-                    )}
-                    {viewMode !== "trainer" && (
-                      <td className="px-4 py-3 text-sm">
-                        {lesson.trainer_name}
-                      </td>
-                    )}
-                    {viewMode !== "classroom" && (
-                      <td className="px-4 py-3 text-sm">
-                        {lesson.classroom_name || "-"}
-                      </td>
-                    )}
-                    <td className="px-4 py-3 text-sm">
-                      {lesson.duration_hours}h
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {!loading &&
+        selectedId &&
+        lessons.length > 0 &&
+        (() => {
+          // Paginação local das aulas
+          const totalTablePages = Math.ceil(
+            lessons.length / TABLE_ITEMS_PER_PAGE,
+          );
+          const paginatedLessons = lessons.slice(
+            (tablePage - 1) * TABLE_ITEMS_PER_PAGE,
+            tablePage * TABLE_ITEMS_PER_PAGE,
+          );
+
+          return (
+            <div className="mt-6 bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="p-4 bg-gray-50 border-b">
+                <h3 className="font-semibold text-gray-800">Lista de Aulas</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                        Data
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                        Horário
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                        Módulo
+                      </th>
+                      {viewMode !== "course" && (
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                          Curso
+                        </th>
+                      )}
+                      {viewMode !== "trainer" && (
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                          Professor
+                        </th>
+                      )}
+                      {viewMode !== "classroom" && (
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                          Sala
+                        </th>
+                      )}
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">
+                        Duração
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {paginatedLessons.map((lesson) => (
+                      <tr key={lesson.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm">
+                          {format(new Date(lesson.date), "dd/MM/yyyy", {
+                            locale: pt,
+                          })}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {lesson.start_time?.substring(0, 5)} -{" "}
+                          {lesson.end_time?.substring(0, 5)}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium">
+                          {lesson.module_name}
+                        </td>
+                        {viewMode !== "course" && (
+                          <td className="px-4 py-3 text-sm">
+                            {lesson.course_name}
+                          </td>
+                        )}
+                        {viewMode !== "trainer" && (
+                          <td className="px-4 py-3 text-sm">
+                            {lesson.trainer_name}
+                          </td>
+                        )}
+                        {viewMode !== "classroom" && (
+                          <td className="px-4 py-3 text-sm">
+                            {lesson.classroom_name || "-"}
+                          </td>
+                        )}
+                        <td className="px-4 py-3 text-sm">
+                          {lesson.duration_hours}h
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-4 border-t">
+                <Pagination
+                  currentPage={tablePage}
+                  totalPages={totalTablePages}
+                  totalItems={lessons.length}
+                  itemsPerPage={TABLE_ITEMS_PER_PAGE}
+                  onPageChange={setTablePage}
+                />
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 };

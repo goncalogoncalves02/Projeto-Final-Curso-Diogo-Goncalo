@@ -84,8 +84,8 @@ const Schedule = () => {
         api.get("/classrooms/"),
       ]);
       setLessons(lessonsRes.data);
-      setCourses(coursesRes.data);
-      setClassrooms(classroomsRes.data);
+      setCourses(coursesRes.data.items || coursesRes.data);
+      setClassrooms(classroomsRes.data.items || classroomsRes.data);
     } catch (err) {
       setError(
         "Erro ao carregar dados: " +
@@ -282,8 +282,9 @@ const Schedule = () => {
         borderLeft: `4px solid ${color.border}`,
         borderRadius: "4px",
         color: "white",
-        fontSize: "12px",
-        padding: "2px 6px",
+        fontSize: "11px",
+        padding: "2px 4px",
+        overflow: "hidden",
       },
     };
   };

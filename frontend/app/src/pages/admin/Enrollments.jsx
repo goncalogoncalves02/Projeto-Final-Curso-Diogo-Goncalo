@@ -27,10 +27,10 @@ const AdminEnrollments = () => {
           api.get("/courses/?limit=100"),
           api.get("/users/?limit=100"),
         ]);
-        setCourses(coursesRes.data);
+        setCourses(coursesRes.data.items || coursesRes.data);
         setUsers(
-          usersRes.data.filter(
-            (u) => u.role === "estudante" || u.role === "student" || true,
+          (usersRes.data.items || usersRes.data).filter(
+            (u) => u.role === "estudante",
           ),
         );
       } catch (err) {
