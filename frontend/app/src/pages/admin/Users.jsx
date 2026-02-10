@@ -84,6 +84,31 @@ const AdminUsers = () => {
     setUserToDelete(user);
   };
 
+  const handleExportPDF = async (user) => {
+    try {
+      const endpoint =
+        user.role === "estudante"
+          ? `/exports/student/${user.id}/pdf`
+          : `/exports/professor/${user.id}/pdf`;
+
+      const response = await api.get(endpoint, { responseType: "blob" });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      const fichaType = user.role === "estudante" ? "formando" : "formador";
+      link.download = `ficha_${fichaType}_${user.full_name || user.id}.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert("Erro ao exportar PDF.");
+    }
+  };
+
   const confirmDelete = async () => {
     if (!userToDelete) return;
     try {
@@ -263,6 +288,14 @@ const AdminUsers = () => {
                     >
                       Ficheiros
                     </button>
+                    {(user.role === "estudante" || user.role === "professor") && (
+                      <button
+                        onClick={() => handleExportPDF(user)}
+                        className="text-green-600 hover:text-green-900 mr-4"
+                      >
+                        Ficha PDF
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDeleteClick(user)}
                       className="text-red-600 hover:text-red-900"
