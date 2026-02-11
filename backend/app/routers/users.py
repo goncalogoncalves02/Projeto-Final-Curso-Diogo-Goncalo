@@ -27,6 +27,9 @@ router = APIRouter(
 @router.get("/")
 def read_users(
     q: Optional[str] = Query(None, min_length=2, description="Termo de pesquisa"),
+    role: Optional[str] = Query(
+        None, description="Filtrar por role (admin, professor, estudante, secretaria)"
+    ),
     page: int = Query(1, ge=1, description="Página atual"),
     limit: int = Query(20, ge=1, le=100, description="Items por página"),
     db: Session = Depends(deps.get_db),
@@ -36,6 +39,10 @@ def read_users(
     Lista todos os utilizadores com paginação (Apenas Admin).
     """
     query = db.query(User)
+
+    # Aplicar filtro de role se fornecido
+    if role:
+        query = query.filter(User.role == role)
 
     # Aplicar filtro de pesquisa se fornecido
     if q:
