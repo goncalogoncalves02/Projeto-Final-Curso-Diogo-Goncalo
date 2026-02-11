@@ -5,6 +5,7 @@ import SearchBar from "../../components/SearchBar";
 import TableLoading from "../../components/TableLoading";
 import TableEmpty from "../../components/TableEmpty";
 import ActionButton from "../../components/ActionButton";
+import ModalPortal from "../../components/ModalPortal";
 import { Pencil, Trash2, Plus, Layers } from "lucide-react";
 
 const AdminModules = () => {
@@ -238,190 +239,196 @@ const AdminModules = () => {
 
       {/* Modal de Edição */}
       {editingModule && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
-            <h2 className="text-xl font-bold mb-6 text-gray-800">
-              Editar Módulo #{editingModule.id}
-            </h2>
-            <form onSubmit={handleUpdate}>
-              <div className="mb-4">
-                <label className="block text-gray-600 text-sm font-medium mb-1.5">
-                  Nome
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-600 text-sm font-medium mb-1.5">
-                  Área
-                </label>
-                <input
-                  type="text"
-                  value={formData.area}
-                  onChange={(e) =>
-                    setFormData({ ...formData, area: e.target.value })
-                  }
-                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-gray-600 text-sm font-medium mb-1.5">
-                  Duração (Horas)
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={formData.default_duration_hours}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      default_duration_hours: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setEditingModule(null)}
-                  className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
-                >
-                  Guardar
-                </button>
-              </div>
-            </form>
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">
+                Editar Módulo #{editingModule.id}
+              </h2>
+              <form onSubmit={handleUpdate}>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Nome
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Área
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.area}
+                    onChange={(e) =>
+                      setFormData({ ...formData, area: e.target.value })
+                    }
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="mb-6">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Duração (Horas)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.default_duration_hours}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        default_duration_hours: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingModule(null)}
+                    className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Modal de Criação */}
       {isCreating && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
-            <h2 className="text-xl font-bold mb-6 text-gray-800">
-              Novo Módulo
-            </h2>
-            <form onSubmit={handleCreate}>
-              <div className="mb-4">
-                <label className="block text-gray-600 text-sm font-medium mb-1.5">
-                  Nome
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={createFormData.name}
-                  onChange={(e) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      name: e.target.value,
-                    })
-                  }
-                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-600 text-sm font-medium mb-1.5">
-                  Área
-                </label>
-                <input
-                  type="text"
-                  value={createFormData.area}
-                  onChange={(e) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      area: e.target.value,
-                    })
-                  }
-                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-gray-600 text-sm font-medium mb-1.5">
-                  Duração (Horas)
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={createFormData.default_duration_hours}
-                  onChange={(e) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      default_duration_hours: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(false)}
-                  className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
-                >
-                  Criar
-                </button>
-              </div>
-            </form>
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">
+                Novo Módulo
+              </h2>
+              <form onSubmit={handleCreate}>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Nome
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={createFormData.name}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        name: e.target.value,
+                      })
+                    }
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Área
+                  </label>
+                  <input
+                    type="text"
+                    value={createFormData.area}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        area: e.target.value,
+                      })
+                    }
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="mb-6">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Duração (Horas)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={createFormData.default_duration_hours}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        default_duration_hours: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(false)}
+                    className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
+                  >
+                    Criar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Modal de Confirmação de Eliminação */}
       {moduleToDelete && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
-                <Trash2 className="h-6 w-6 text-red-500" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Eliminar Módulo
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                Tens a certeza que queres eliminar o módulo{" "}
-                <span className="font-bold text-gray-800">
-                  {moduleToDelete.name}
-                </span>
-                ? <br />
-                Esta ação é irreversível.
-              </p>
-              <div className="flex justify-center gap-3">
-                <button
-                  onClick={() => setModuleToDelete(null)}
-                  className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium text-sm shadow-sm"
-                >
-                  Sim, Eliminar
-                </button>
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+                  <Trash2 className="h-6 w-6 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Eliminar Módulo
+                </h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  Tens a certeza que queres eliminar o módulo{" "}
+                  <span className="font-bold text-gray-800">
+                    {moduleToDelete.name}
+                  </span>
+                  ? <br />
+                  Esta ação é irreversível.
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => setModuleToDelete(null)}
+                    className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium text-sm shadow-sm"
+                  >
+                    Sim, Eliminar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );
