@@ -25,6 +25,7 @@ class UserUpdate(BaseModel):
     is_2fa_enabled: Optional[bool] = None
     full_name: Optional[str] = None
     role: Optional[str] = None
+    phone_number: Optional[str] = None
 
 
 # Propriedades para devolver ao cliente (API output)
@@ -32,6 +33,8 @@ class UserUpdate(BaseModel):
 class User(UserBase):
     id: int
     is_2fa_enabled: bool
+    phone_number: Optional[str] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         orm_mode = True  # Permite ler dados diretamente dos modelos SQLAlchemy

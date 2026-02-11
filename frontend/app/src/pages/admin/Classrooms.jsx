@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import Pagination from "../../components/Pagination";
 import SearchBar from "../../components/SearchBar";
 import TableLoading from "../../components/TableLoading";
 import TableEmpty from "../../components/TableEmpty";
+import ActionButton from "../../components/ActionButton";
+import ModalPortal from "../../components/ModalPortal";
+import { Pencil, Trash2, Plus } from "lucide-react";
 
 const AdminClassrooms = () => {
   const [classrooms, setClassrooms] = useState([]);
@@ -14,13 +16,11 @@ const AdminClassrooms = () => {
   const [classroomToDelete, setClassroomToDelete] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Estados de paginação
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const ITEMS_PER_PAGE = 20;
 
-  // Estado de pesquisa
   const [searchQuery, setSearchQuery] = useState("");
 
   const initialFormState = {
@@ -123,30 +123,29 @@ const AdminClassrooms = () => {
     }
   };
 
-  // Loading is now handled inline, not with early return
-
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Gestão de Salas</h1>
-        <div className="space-x-4">
-          <button
-            onClick={() => setIsCreating(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow"
-          >
-            + Nova Sala
-          </button>
-          <Link
-            to="/"
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            Voltar à Dashboard
-          </Link>
+    <div className="animate-fade-in-up">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Gestão de Salas
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Gerir salas e laboratórios
+          </p>
         </div>
+        <button
+          onClick={() => setIsCreating(true)}
+          className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-200 font-medium text-sm"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Sala
+        </button>
       </div>
 
-      {/* Barra de Pesquisa */}
-      <div className="mb-4">
+      {/* Search Bar */}
+      <div className="mb-5">
         <SearchBar
           onSearch={handleSearch}
           placeholder="Pesquisar por nome ou tipo..."
@@ -154,82 +153,99 @@ const AdminClassrooms = () => {
       </div>
 
       {error && (
-        <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 border border-red-100">
+          {error}
+        </div>
       )}
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nome da Sala
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tipo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Capacidade
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Disponibilidade
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {loading ? (
-              <TableLoading colSpan={6} />
-            ) : classrooms.length === 0 ? (
-              <TableEmpty colSpan={6} message="Nenhuma sala encontrada." />
-            ) : (
-              classrooms.map((classroom) => (
-                <tr key={classroom.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    #{classroom.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                    {classroom.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {classroom.type || "-"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {classroom.capacity} lugares
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${classroom.is_available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-                    >
-                      {classroom.is_available ? "Disponível" : "Indisponível"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleEditClick(classroom)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(classroom)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Apagar
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Table */}
+      <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gray-50/80">
+              <tr>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  ID
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Nome da Sala
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  Tipo
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Capacidade
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  Disponibilidade
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-50">
+              {loading ? (
+                <TableLoading colSpan={6} />
+              ) : classrooms.length === 0 ? (
+                <TableEmpty colSpan={6} message="Nenhuma sala encontrada." />
+              ) : (
+                classrooms.map((classroom) => (
+                  <tr
+                    key={classroom.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
+                      #{classroom.id}
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-semibold text-gray-900">
+                        {classroom.name}
+                      </div>
+                      <div className="text-xs text-gray-400 md:hidden">
+                        {classroom.type || "-"}
+                      </div>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
+                      {classroom.type || "-"}
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-medium text-gray-700 bg-blue-50 px-2.5 py-1 rounded-full">
+                        {classroom.capacity} lugares
+                      </span>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm hidden sm:table-cell">
+                      <span
+                        className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full ${classroom.is_available ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}
+                      >
+                        {classroom.is_available ? "Disponível" : "Indisponível"}
+                      </span>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <ActionButton
+                          icon={Pencil}
+                          label="Editar"
+                          variant="primary"
+                          onClick={() => handleEditClick(classroom)}
+                        />
+                        <ActionButton
+                          icon={Trash2}
+                          label="Apagar"
+                          variant="danger"
+                          onClick={() => handleDeleteClick(classroom)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Paginação */}
+      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
@@ -240,236 +256,234 @@ const AdminClassrooms = () => {
 
       {/* Modal de Edição */}
       {editingClassroom && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
-            <h2 className="text-xl font-bold mb-4">
-              Editar Sala #{editingClassroom.id}
-            </h2>
-            <form onSubmit={handleUpdate}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Nome
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Tipo
-                </label>
-                <input
-                  type="text"
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value })
-                  }
-                  placeholder="Ex: Informática, Teórica"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Capacidade
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={formData.capacity}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      capacity: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="flex items-center">
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">
+                Editar Sala #{editingClassroom.id}
+              </h2>
+              <form onSubmit={handleUpdate}>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Nome
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={formData.is_available}
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Tipo
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.type}
+                    onChange={(e) =>
+                      setFormData({ ...formData, type: e.target.value })
+                    }
+                    placeholder="Ex: Informática, Teórica"
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Capacidade
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.capacity}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        is_available: e.target.checked,
+                        capacity: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="mr-2"
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
-                  <span className="text-sm">Sala Disponível</span>
-                </label>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setEditingClassroom(null)}
-                  className="mr-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Guardar
-                </button>
-              </div>
-            </form>
+                </div>
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_available}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_available: e.target.checked,
+                        })
+                      }
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-600">
+                      Sala Disponível
+                    </span>
+                  </label>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingClassroom(null)}
+                    className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Modal de Criação */}
       {isCreating && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
-            <h2 className="text-xl font-bold mb-4">Nova Sala</h2>
-            <form onSubmit={handleCreate}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Nome
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={createFormData.name}
-                  onChange={(e) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      name: e.target.value,
-                    })
-                  }
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Tipo
-                </label>
-                <input
-                  type="text"
-                  value={createFormData.type}
-                  onChange={(e) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      type: e.target.value,
-                    })
-                  }
-                  placeholder="Ex: Informática, Teórica"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Capacidade
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={createFormData.capacity}
-                  onChange={(e) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      capacity: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="flex items-center">
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">
+                Nova Sala
+              </h2>
+              <form onSubmit={handleCreate}>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Nome
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={createFormData.is_available}
+                    type="text"
+                    required
+                    value={createFormData.name}
                     onChange={(e) =>
                       setCreateFormData({
                         ...createFormData,
-                        is_available: e.target.checked,
+                        name: e.target.value,
                       })
                     }
-                    className="mr-2"
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
-                  <span className="text-sm">Sala Disponível</span>
-                </label>
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(false)}
-                  className="mr-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Criar
-                </button>
-              </div>
-            </form>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Tipo
+                  </label>
+                  <input
+                    type="text"
+                    value={createFormData.type}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        type: e.target.value,
+                      })
+                    }
+                    placeholder="Ex: Informática, Teórica"
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-600 text-sm font-medium mb-1.5">
+                    Capacidade
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={createFormData.capacity}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        capacity: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={createFormData.is_available}
+                      onChange={(e) =>
+                        setCreateFormData({
+                          ...createFormData,
+                          is_available: e.target.checked,
+                        })
+                      }
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-600">
+                      Sala Disponível
+                    </span>
+                  </label>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(false)}
+                    className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
+                  >
+                    Criar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Modal de Confirmação de Eliminação */}
       {classroomToDelete && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96 transform transition-all scale-100">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg
-                  className="h-6 w-6 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Eliminar Sala
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                Tens a certeza que queres eliminar a sala{" "}
-                <span className="font-bold text-gray-800">
-                  {classroomToDelete.name}
-                </span>
-                ? <br />
-                Esta ação é irreversível.
-              </p>
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={() => setClassroomToDelete(null)}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none transition-colors shadow-lg"
-                >
-                  Sim, Eliminar
-                </button>
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+                  <Trash2 className="h-6 w-6 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Eliminar Sala
+                </h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  Tens a certeza que queres eliminar a sala{" "}
+                  <span className="font-bold text-gray-800">
+                    {classroomToDelete.name}
+                  </span>
+                  ? <br />
+                  Esta ação é irreversível.
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => setClassroomToDelete(null)}
+                    className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium text-sm shadow-sm"
+                  >
+                    Sim, Eliminar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

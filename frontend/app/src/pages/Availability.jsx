@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { Trash2, Plus, Calendar } from "lucide-react";
+import ModalPortal from "../components/ModalPortal";
 
 const Availability = () => {
   const [availabilities, setAvailabilities] = useState([]);
@@ -33,7 +34,8 @@ const Availability = () => {
       const response = await api.get("/availability/?my_only=true");
       const sorted = response.data.sort((a, b) => {
         // Sort rationale: Date first (asc), then Day of Week (asc)
-        if (a.specific_date && b.specific_date) return new Date(a.specific_date) - new Date(b.specific_date);
+        if (a.specific_date && b.specific_date)
+          return new Date(a.specific_date) - new Date(b.specific_date);
         if (a.is_recurring && !b.is_recurring) return 1;
         if (!a.is_recurring && b.is_recurring) return -1;
         return a.day_of_week - b.day_of_week;
@@ -70,7 +72,7 @@ const Availability = () => {
 
       const response = await api.post("/availability/", payload);
       // Re-fetch to simpler sort logic or manual append
-      fetchAvailabilities(); 
+      fetchAvailabilities();
       setIsCreating(false);
     } catch (error) {
       console.error(error);
@@ -79,7 +81,8 @@ const Availability = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Tem a certeza que quer remover esta disponibilidade?")) return;
+    if (!confirm("Tem a certeza que quer remover esta disponibilidade?"))
+      return;
     try {
       await api.delete(`/availability/${id}`);
       setAvailabilities(availabilities.filter((a) => a.id !== id));
@@ -89,27 +92,28 @@ const Availability = () => {
     }
   };
 
-  const getDayName = (id) => daysOfWeek.find((d) => d.id === id)?.name || "Desconhecido";
+  const getDayName = (id) =>
+    daysOfWeek.find((d) => d.id === id)?.name || "Desconhecido";
 
   if (loading) return <div className="p-8 text-center">A carregar...</div>;
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
             <Calendar className="mr-3 w-8 h-8 text-blue-600" />
             Minha Disponibilidade
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mt-1">
             Define os horários em que podes dar aulas.
           </p>
         </div>
         <button
           onClick={() => setIsCreating(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow flex items-center"
+          className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-200 font-medium text-sm"
         >
-          <Plus className="w-5 h-5 mr-2" />
+          <Plus className="w-4 h-4 mr-2" />
           Adicionar Horário
         </button>
       </div>
@@ -145,17 +149,19 @@ const Availability = () => {
               {availabilities.map((slot) => (
                 <tr key={slot.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {slot.is_recurring 
-                      ? getDayName(slot.day_of_week) 
-                      : new Date(slot.specific_date).toLocaleDateString("pt-PT")}
+                    {slot.is_recurring
+                      ? getDayName(slot.day_of_week)
+                      : new Date(slot.specific_date).toLocaleDateString(
+                          "pt-PT",
+                        )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span 
+                    <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        slot.is_recurring 
+                        slot.is_recurring
                           ? "bg-blue-100 text-blue-800"
                           : "bg-purple-100 text-purple-800"
                       }`}
@@ -179,179 +185,192 @@ const Availability = () => {
       </div>
 
       {isCreating && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96">
-            <h2 className="text-xl font-bold mb-4">Adicionar Disponibilidade</h2>
-            <form onSubmit={handleCreate}>
-              
-              {/* Recurrence Toggle */}
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Tipo
-                </label>
-                <div className="flex space-x-4">
-                  <label className="inline-flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      className="form-radio text-blue-600"
-                      name="recurrence"
-                      checked={formData.is_recurring}
-                      onChange={() => setFormData({ ...formData, is_recurring: true })}
-                    />
-                    <span className="ml-2">Semanal (Recorrente)</span>
-                  </label>
-                  <label className="inline-flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      className="form-radio text-blue-600"
-                      name="recurrence"
-                      checked={!formData.is_recurring}
-                      onChange={() => setFormData({ ...formData, is_recurring: false })}
-                    />
-                    <span className="ml-2">Data Específica</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Day of Week OR Specific Date Input */}
-              {formData.is_recurring ? (
+        <ModalPortal>
+          <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+              <h2 className="text-xl font-bold mb-4">
+                Adicionar Disponibilidade
+              </h2>
+              <form onSubmit={handleCreate}>
+                {/* Recurrence Toggle */}
                 <div className="mb-4">
                   <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Dia da Semana
+                    Tipo
                   </label>
-                  <select
-                    value={formData.day_of_week}
-                    onChange={(e) =>
-                      setFormData({ ...formData, day_of_week: e.target.value })
-                    }
-                    className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:shadow-outline"
+                  <div className="flex space-x-4">
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        className="form-radio text-blue-600"
+                        name="recurrence"
+                        checked={formData.is_recurring}
+                        onChange={() =>
+                          setFormData({ ...formData, is_recurring: true })
+                        }
+                      />
+                      <span className="ml-2">Semanal (Recorrente)</span>
+                    </label>
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        className="form-radio text-blue-600"
+                        name="recurrence"
+                        checked={!formData.is_recurring}
+                        onChange={() =>
+                          setFormData({ ...formData, is_recurring: false })
+                        }
+                      />
+                      <span className="ml-2">Data Específica</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Day of Week OR Specific Date Input */}
+                {formData.is_recurring ? (
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      Dia da Semana
+                    </label>
+                    <select
+                      value={formData.day_of_week}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          day_of_week: e.target.value,
+                        })
+                      }
+                      className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:shadow-outline"
+                    >
+                      {daysOfWeek.map((day) => (
+                        <option key={day.id} value={day.id}>
+                          {day.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      Data
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.specific_date}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          specific_date: e.target.value,
+                        })
+                      }
+                      className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:shadow-outline"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {/* INÍCIO */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      Início
+                    </label>
+                    <div className="flex space-x-2">
+                      <select
+                        value={formData.start_time.split(":")[0]}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            start_time: `${e.target.value}:${formData.start_time.split(":")[1]}`,
+                          })
+                        }
+                        className="shadow border rounded w-full py-2 px-2 text-gray-700 focus:outline-none focus:shadow-outline"
+                      >
+                        {Array.from({ length: 24 }, (_, i) => i).map((h) => (
+                          <option key={h} value={h.toString().padStart(2, "0")}>
+                            {h.toString().padStart(2, "0")}h
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={formData.start_time.split(":")[1]}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            start_time: `${formData.start_time.split(":")[0]}:${e.target.value}`,
+                          })
+                        }
+                        className="shadow border rounded w-full py-2 px-2 text-gray-700 focus:outline-none focus:shadow-outline"
+                      >
+                        {["00", "15", "30", "45"].map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* FIM */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      Fim
+                    </label>
+                    <div className="flex space-x-2">
+                      <select
+                        value={formData.end_time.split(":")[0]}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            end_time: `${e.target.value}:${formData.end_time.split(":")[1]}`,
+                          })
+                        }
+                        className="shadow border rounded w-full py-2 px-2 text-gray-700 focus:outline-none focus:shadow-outline"
+                      >
+                        {Array.from({ length: 24 }, (_, i) => i).map((h) => (
+                          <option key={h} value={h.toString().padStart(2, "0")}>
+                            {h.toString().padStart(2, "0")}h
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={formData.end_time.split(":")[1]}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            end_time: `${formData.end_time.split(":")[0]}:${e.target.value}`,
+                          })
+                        }
+                        className="shadow border rounded w-full py-2 px-2 text-gray-700 focus:outline-none focus:shadow-outline"
+                      >
+                        {["00", "15", "30", "45"].map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreating(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
                   >
-                    {daysOfWeek.map((day) => (
-                      <option key={day.id} value={day.id}>
-                        {day.name}
-                      </option>
-                    ))}
-                  </select>
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Adicionar
+                  </button>
                 </div>
-              ) : (
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Data
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.specific_date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, specific_date: e.target.value })
-                    }
-                    className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:shadow-outline"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* INÍCIO */}
-                <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Início
-                  </label>
-                  <div className="flex space-x-2">
-                    <select
-                      value={formData.start_time.split(":")[0]}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          start_time: `${e.target.value}:${formData.start_time.split(":")[1]}`,
-                        })
-                      }
-                      className="shadow border rounded w-full py-2 px-2 text-gray-700 focus:outline-none focus:shadow-outline"
-                    >
-                      {Array.from({ length: 24 }, (_, i) => i).map((h) => (
-                        <option key={h} value={h.toString().padStart(2, "0")}>
-                          {h.toString().padStart(2, "0")}h
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={formData.start_time.split(":")[1]}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          start_time: `${formData.start_time.split(":")[0]}:${e.target.value}`,
-                        })
-                      }
-                      className="shadow border rounded w-full py-2 px-2 text-gray-700 focus:outline-none focus:shadow-outline"
-                    >
-                      {["00", "15", "30", "45"].map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* FIM */}
-                <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Fim
-                  </label>
-                  <div className="flex space-x-2">
-                    <select
-                      value={formData.end_time.split(":")[0]}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          end_time: `${e.target.value}:${formData.end_time.split(":")[1]}`,
-                        })
-                      }
-                      className="shadow border rounded w-full py-2 px-2 text-gray-700 focus:outline-none focus:shadow-outline"
-                    >
-                      {Array.from({ length: 24 }, (_, i) => i).map((h) => (
-                        <option key={h} value={h.toString().padStart(2, "0")}>
-                          {h.toString().padStart(2, "0")}h
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={formData.end_time.split(":")[1]}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          end_time: `${formData.end_time.split(":")[0]}:${e.target.value}`,
-                        })
-                      }
-                      className="shadow border rounded w-full py-2 px-2 text-gray-700 focus:outline-none focus:shadow-outline"
-                    >
-                      {["00", "15", "30", "45"].map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Adicionar
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );
