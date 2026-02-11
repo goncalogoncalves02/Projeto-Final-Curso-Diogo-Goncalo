@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../api/axios";
+import { createPortal } from "react-dom";
 import { FileText, Upload, Trash2, Download, X } from "lucide-react";
 
 const UserFilesModal = ({ userId, userName, onClose }) => {
@@ -85,7 +86,7 @@ const UserFilesModal = ({ userId, userName, onClose }) => {
     });
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
         {/* Header */}
@@ -186,7 +187,8 @@ const UserFilesModal = ({ userId, userName, onClose }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
