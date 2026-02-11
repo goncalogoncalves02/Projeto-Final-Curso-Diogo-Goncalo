@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import Pagination from "../../components/Pagination";
 import SearchBar from "../../components/SearchBar";
 import TableLoading from "../../components/TableLoading";
 import TableEmpty from "../../components/TableEmpty";
+import ActionButton from "../../components/ActionButton";
+import { Pencil, Trash2, Plus, Layers, X } from "lucide-react";
 
 const AdminCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -269,27 +270,28 @@ const AdminCourses = () => {
   // Loading is now handled inline, not with early return
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Gestão de Cursos</h1>
-        <div className="space-x-4">
-          <button
-            onClick={() => setIsCreating(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow"
-          >
-            + Novo Curso
-          </button>
-          <Link
-            to="/"
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            Voltar à Dashboard
-          </Link>
+    <div className="animate-fade-in-up">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Gestão de Cursos
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Gerir cursos e estrutura curricular
+          </p>
         </div>
+        <button
+          onClick={() => setIsCreating(true)}
+          className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-200 font-medium text-sm"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Curso
+        </button>
       </div>
 
-      {/* Barra de Pesquisa */}
-      <div className="mb-4">
+      {/* Search Bar */}
+      <div className="mb-5">
         <SearchBar
           onSearch={handleSearch}
           placeholder="Pesquisar por nome ou área..."
@@ -297,106 +299,112 @@ const AdminCourses = () => {
       </div>
 
       {error && (
-        <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 border border-red-100">
+          {error}
+        </div>
       )}
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nome do Curso
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Área
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Datas
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {loading ? (
-              <TableLoading colSpan={6} />
-            ) : courses.length === 0 ? (
-              <TableEmpty colSpan={6} message="Nenhum curso encontrado." />
-            ) : (
-              courses.map((course) => (
-                <tr key={course.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    #{course.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {course.name}
-                    </div>
-                    <div className="text-sm text-gray-500 truncate w-64">
-                      {course.description}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {course.area}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div>Início: {course.start_date}</div>
-                    <div>Fim: {course.end_date}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${
-                        course.status === "active"
-                          ? "bg-green-100 text-green-800"
+      <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gray-50/80">
+              <tr>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  ID
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Curso
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  Datas
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-50">
+              {loading ? (
+                <TableLoading colSpan={5} />
+              ) : courses.length === 0 ? (
+                <TableEmpty colSpan={5} message="Nenhum curso encontrado." />
+              ) : (
+                courses.map((course) => (
+                  <tr
+                    key={course.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
+                      #{course.id}
+                    </td>
+                    <td className="px-4 md:px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {course.name}
+                      </div>
+                      <div className="text-xs text-gray-400">{course.area}</div>
+                      {course.description && (
+                        <div className="text-xs text-gray-400 truncate max-w-xs mt-0.5">
+                          {course.description}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
+                      <div className="text-xs">Início: {course.start_date}</div>
+                      <div className="text-xs">Fim: {course.end_date}</div>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full
+                        ${
+                          course.status === "active"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : course.status === "finished"
+                              ? "bg-gray-100 text-gray-700"
+                              : course.status === "cancelled"
+                                ? "bg-red-50 text-red-700"
+                                : "bg-blue-50 text-blue-700"
+                        }`}
+                      >
+                        {course.status === "active"
+                          ? "Ativo"
                           : course.status === "finished"
-                            ? "bg-gray-100 text-gray-800"
+                            ? "Terminado"
                             : course.status === "cancelled"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {course.status === "active"
-                        ? "Ativo"
-                        : course.status === "finished"
-                          ? "Terminado"
-                          : course.status === "cancelled"
-                            ? "Cancelado"
-                            : "Planeado"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleManageModulesClick(course)}
-                      className="text-teal-600 hover:text-teal-900 mr-4 font-bold"
-                    >
-                      Módulos
-                    </button>
-                    <button
-                      onClick={() => handleEditClick(course)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(course)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Apagar
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                              ? "Cancelado"
+                              : "Planeado"}
+                      </span>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <ActionButton
+                          icon={Layers}
+                          label="Módulos"
+                          variant="info"
+                          onClick={() => handleManageModulesClick(course)}
+                        />
+                        <ActionButton
+                          icon={Pencil}
+                          label="Editar"
+                          variant="primary"
+                          onClick={() => handleEditClick(course)}
+                        />
+                        <ActionButton
+                          icon={Trash2}
+                          label="Apagar"
+                          variant="danger"
+                          onClick={() => handleDeleteClick(course)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Paginação */}
@@ -410,17 +418,17 @@ const AdminCourses = () => {
 
       {/* Modal de Gestão de Módulos */}
       {managingCourse && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-4xl h-5/6 flex flex-col">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-4xl h-5/6 flex flex-col animate-scale-in">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">
                 Estrutura Curricular: {managingCourse.name}
               </h2>
               <button
                 onClick={() => setManagingCourse(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
               >
-                &times;
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -627,8 +635,8 @@ const AdminCourses = () => {
 
       {/* Modal de Edição */}
       {editingCourse && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
             <h2 className="text-xl font-bold mb-4">
               Editar Curso #{editingCourse.id}
             </h2>
@@ -743,8 +751,8 @@ const AdminCourses = () => {
 
       {/* Modal de Criação */}
       {isCreating && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
             <h2 className="text-xl font-bold mb-4">Novo Curso</h2>
             <form onSubmit={handleCreate}>
               <div className="mb-4">
@@ -875,8 +883,8 @@ const AdminCourses = () => {
 
       {/* Modal de Confirmação de Eliminação */}
       {courseToDelete && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96 transform transition-all scale-100">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
                 <svg
@@ -925,8 +933,8 @@ const AdminCourses = () => {
 
       {/* Modal de Confirmação de Eliminação de Módulo */}
       {moduleToDelete && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96 transform transition-all scale-100">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
                 <svg
