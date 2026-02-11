@@ -1,14 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../api/axios";
-import { BookOpen, UserPlus, Trash2, User } from "lucide-react";
+import {
+  BookOpen,
+  UserPlus,
+  Trash2,
+  User,
+  Search,
+  X,
+  Loader2,
+} from "lucide-react";
 import Modal from "../../components/Modal";
 
 const AdminEnrollments = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [enrollments, setEnrollments] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState("");
+
+  // Search bar state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const searchRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  // Cache of user details for displaying enrolled users
+  const [userCache, setUserCache] = useState({});
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -20,25 +38,26 @@ const AdminEnrollments = () => {
   });
 
   useEffect(() => {
-    // Fetch courses and users for dropdowns
-    const fetchData = async () => {
+    const fetchCourses = async () => {
       try {
-        const [coursesRes, usersRes] = await Promise.all([
-          api.get("/courses/?limit=100"),
-          api.get("/users/?limit=100"),
-        ]);
-        setCourses(coursesRes.data.items || coursesRes.data);
-        setUsers(
-          (usersRes.data.items || usersRes.data).filter(
-            (u) => u.role === "estudante",
-          ),
-        );
+        const res = await api.get("/courses/?limit=100");
+        setCourses(res.data.items || res.data);
       } catch (err) {
-        console.log(err);
-        console.error("Failed to load initial data");
+        console.error("Failed to load courses", err);
       }
     };
-    fetchData();
+    fetchCourses();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleCourseChange = (e) => {
@@ -49,6 +68,15 @@ const AdminEnrollments = () => {
     } else {
       setEnrollments([]);
     }
+    // Reset search when changing course
+    resetSearch();
+  };
+
+  const resetSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedUser(null);
+    setShowDropdown(false);
   };
 
   const showModal = (title, message, type = "info", onConfirm = null) => {
@@ -57,16 +85,88 @@ const AdminEnrollments = () => {
   };
 
   const fetchEnrollments = async (courseId) => {
-    // setLoading(true);
     try {
       const response = await api.get(`/enrollments/?course_id=${courseId}`);
       setEnrollments(response.data);
+
+      // Fetch user details for enrolled users
+      const userIds = response.data.map((e) => e.user_id);
+      const uniqueIds = [...new Set(userIds)];
+      const missing = uniqueIds.filter((id) => !userCache[id]);
+
+      if (missing.length > 0) {
+        const userPromises = missing.map((id) =>
+          api
+            .get(`/users/${id}`)
+            .then((res) => res.data)
+            .catch(() => null),
+        );
+        const users = await Promise.all(userPromises);
+        const newCache = { ...userCache };
+        users.forEach((u) => {
+          if (u) newCache[u.id] = u;
+        });
+        setUserCache(newCache);
+      }
     } catch (err) {
       console.error(err);
       showModal("Erro", "Erro ao carregar inscrições.");
-    } finally {
-      // setLoading(false);
     }
+  };
+
+  // Debounced search for students
+  const searchStudents = useCallback(
+    (query) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+
+      if (!query || query.length < 2) {
+        setSearchResults([]);
+        setShowDropdown(false);
+        setSearching(false);
+        return;
+      }
+
+      setSearching(true);
+      debounceRef.current = setTimeout(async () => {
+        try {
+          const res = await api.get(
+            `/users/?q=${encodeURIComponent(query)}&role=estudante&limit=10`,
+          );
+          const results = res.data.items || res.data;
+
+          // Filter out already enrolled students
+          const enrolledUserIds = new Set(enrollments.map((e) => e.user_id));
+          const filtered = results.filter((u) => !enrolledUserIds.has(u.id));
+
+          setSearchResults(filtered);
+          setShowDropdown(true);
+        } catch (err) {
+          console.error("Search failed", err);
+          setSearchResults([]);
+        } finally {
+          setSearching(false);
+        }
+      }, 300);
+    },
+    [enrollments],
+  );
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setSelectedUser(null);
+    searchStudents(value);
+  };
+
+  const handleSelectUser = (user) => {
+    setSelectedUser(user);
+    setSearchQuery(user.full_name || user.email);
+    setShowDropdown(false);
+    setSearchResults([]);
+  };
+
+  const handleClearSearch = () => {
+    resetSearch();
   };
 
   const handleEnroll = async (e) => {
@@ -76,13 +176,17 @@ const AdminEnrollments = () => {
     try {
       const payload = {
         course_id: parseInt(selectedCourse),
-        user_id: parseInt(selectedUser),
-        enrollment_date: new Date().toISOString().split("T")[0], // Today YYYY-MM-DD
+        user_id: selectedUser.id,
+        enrollment_date: new Date().toISOString().split("T")[0],
         status: "active",
       };
       const response = await api.post("/enrollments/", payload);
       setEnrollments([...enrollments, response.data]);
-      setSelectedUser(""); // Reset selection
+
+      // Add user to cache
+      setUserCache((prev) => ({ ...prev, [selectedUser.id]: selectedUser }));
+
+      resetSearch();
       showModal("Sucesso", "Aluno inscrito com sucesso!", "success");
     } catch (err) {
       console.error(err);
@@ -114,14 +218,13 @@ const AdminEnrollments = () => {
     }
   };
 
-  // Helper to find user name by ID
   const getUserName = (userId) => {
-    const user = users.find((u) => u.id === userId);
+    const user = userCache[userId];
     return user ? `${user.full_name || user.email}` : `User #${userId}`;
   };
 
   const getUserEmail = (userId) => {
-    const user = users.find((u) => u.id === userId);
+    const user = userCache[userId];
     return user ? user.email : "";
   };
 
@@ -165,33 +268,88 @@ const AdminEnrollments = () => {
           </select>
         </div>
 
-        {/* Enroll New Student Form */}
+        {/* Enroll New Student - Search Bar */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <label className="block text-gray-700 text-sm font-bold mb-2">
             2. Inscrever Novo Aluno
           </label>
           <form onSubmit={handleEnroll} className="flex gap-2">
-            <select
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              disabled={!selectedCourse}
-              className="block w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500 disabled:opacity-50"
-            >
-              <option value="">Selecione um aluno para inscrever...</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name ? `${u.full_name} (${u.email})` : u.email}
-                </option>
-              ))}
-            </select>
+            <div className="relative flex-1" ref={searchRef}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => {
+                    if (searchResults.length > 0) setShowDropdown(true);
+                  }}
+                  disabled={!selectedCourse}
+                  placeholder="Pesquisar aluno por nome ou email..."
+                  className="block w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 pl-10 pr-10 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500 disabled:opacity-50"
+                />
+                {searching && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 animate-spin" />
+                )}
+                {!searching && searchQuery && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              {showDropdown && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {searchResults.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-500">
+                      Nenhum aluno encontrado.
+                    </div>
+                  ) : (
+                    searchResults.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handleSelectUser(user)}
+                        className="w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {user.full_name || "Sem nome"}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={!selectedCourse || !selectedUser}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 flex items-center"
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 flex items-center transition-colors"
             >
               <UserPlus className="w-5 h-5" />
             </button>
           </form>
+          {selectedUser && (
+            <p className="mt-2 text-xs text-green-600 flex items-center gap-1">
+              <User className="w-3 h-3" />
+              Selecionado:{" "}
+              <strong>{selectedUser.full_name || selectedUser.email}</strong>
+            </p>
+          )}
         </div>
       </div>
 
