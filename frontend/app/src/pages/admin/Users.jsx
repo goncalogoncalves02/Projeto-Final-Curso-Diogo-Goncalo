@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import UserFilesModal from "../../components/UserFilesModal";
 import Pagination from "../../components/Pagination";
 import SearchBar from "../../components/SearchBar";
 import TableLoading from "../../components/TableLoading";
 import TableEmpty from "../../components/TableEmpty";
+import ActionButton from "../../components/ActionButton";
+import {
+  Pencil,
+  Trash2,
+  FolderOpen,
+  FileText,
+  Plus,
+  UserPlus,
+} from "lucide-react";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -162,32 +170,29 @@ const AdminUsers = () => {
     }
   };
 
-  // Loading is now handled inline, not with early return
-
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Gestão de Utilizadores
-        </h1>
-        <div className="space-x-4">
-          <button
-            onClick={() => setIsCreating(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow"
-          >
-            + Novo Utilizador
-          </button>
-          <Link
-            to="/"
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            Voltar à Dashboard
-          </Link>
+    <div className="animate-fade-in-up">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Gestão de Utilizadores
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Gerir contas e permissões
+          </p>
         </div>
+        <button
+          onClick={() => setIsCreating(true)}
+          className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-200 font-medium text-sm"
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Novo Utilizador
+        </button>
       </div>
 
-      {/* Barra de Pesquisa */}
-      <div className="mb-4">
+      {/* Search Bar */}
+      <div className="mb-5">
         <SearchBar
           onSearch={handleSearch}
           placeholder="Pesquisar por nome ou email..."
@@ -195,122 +200,131 @@ const AdminUsers = () => {
       </div>
 
       {error && (
-        <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 border border-red-100">
+          {error}
+        </div>
       )}
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nome / Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Função
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {loading ? (
-              <TableLoading colSpan={5} />
-            ) : users.length === 0 ? (
-              <TableEmpty colSpan={5} message="Nenhum utilizador encontrado." />
-            ) : (
-              users.map((user) => (
-                <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    #{user.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user.full_name || "Sem nome"}
-                    </div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        ${
-                                          user.role === "admin"
-                                            ? "bg-purple-100 text-purple-800"
-                                            : user.role === "professor"
-                                              ? "bg-blue-100 text-blue-800"
-                                              : user.role === "secretaria"
-                                                ? "bg-orange-100 text-orange-800"
-                                                : "bg-green-100 text-green-800"
-                                        }`}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        ${user.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-                    >
-                      {user.is_active ? "Ativo" : "Inativo"}
-                    </span>
-                    {user.is_superuser && (
-                      <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        SuperUser
-                      </span>
-                    )}
-                    {user.otp_code && (
-                      <div className="mt-1 text-xs text-gray-400">
-                        OTP: {user.otp_code}
+      {/* Table */}
+      <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-gray-50/80">
+              <tr>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  ID
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Nome / Email
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Função
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  Estado
+                </th>
+                <th className="px-4 md:px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-50">
+              {loading ? (
+                <TableLoading colSpan={5} />
+              ) : users.length === 0 ? (
+                <TableEmpty
+                  colSpan={5}
+                  message="Nenhum utilizador encontrado."
+                />
+              ) : (
+                users.map((user) => (
+                  <tr
+                    key={user.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
+                      #{user.id}
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {user.full_name || "Sem nome"}
                       </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleEditClick(user)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() =>
-                        setUserFilesView({
-                          id: user.id,
-                          full_name: user.full_name || user.email,
-                        })
-                      }
-                      className="text-blue-600 hover:text-blue-900 mr-4"
-                    >
-                      Ficheiros
-                    </button>
-                    {(user.role === "estudante" || user.role === "professor") && (
-                      <button
-                        onClick={() => handleExportPDF(user)}
-                        className="text-green-600 hover:text-green-900 mr-4"
+                      <div className="text-xs text-gray-400">{user.email}</div>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full 
+                          ${
+                            user.role === "admin"
+                              ? "bg-purple-50 text-purple-700"
+                              : user.role === "professor"
+                                ? "bg-blue-50 text-blue-700"
+                                : user.role === "secretaria"
+                                  ? "bg-orange-50 text-orange-700"
+                                  : "bg-emerald-50 text-emerald-700"
+                          }`}
                       >
-                        Ficha PDF
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteClick(user)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Apagar
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm hidden md:table-cell">
+                      <span
+                        className={`px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full 
+                          ${user.is_active ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}
+                      >
+                        {user.is_active ? "Ativo" : "Inativo"}
+                      </span>
+                      {user.is_superuser && (
+                        <span className="ml-2 px-2.5 py-1 inline-flex text-xs leading-4 font-semibold rounded-full bg-amber-50 text-amber-700">
+                          Super
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <ActionButton
+                          icon={Pencil}
+                          label="Editar"
+                          variant="primary"
+                          onClick={() => handleEditClick(user)}
+                        />
+                        <ActionButton
+                          icon={FolderOpen}
+                          label="Ficheiros"
+                          variant="info"
+                          onClick={() =>
+                            setUserFilesView({
+                              id: user.id,
+                              full_name: user.full_name || user.email,
+                            })
+                          }
+                        />
+                        {(user.role === "estudante" ||
+                          user.role === "professor") && (
+                          <ActionButton
+                            icon={FileText}
+                            label="Ficha PDF"
+                            variant="success"
+                            onClick={() => handleExportPDF(user)}
+                          />
+                        )}
+                        <ActionButton
+                          icon={Trash2}
+                          label="Apagar"
+                          variant="danger"
+                          onClick={() => handleDeleteClick(user)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Paginação */}
+      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
@@ -321,14 +335,14 @@ const AdminUsers = () => {
 
       {/* Modal de Edição */}
       {editingUser && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
-            <h2 className="text-xl font-bold mb-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
+            <h2 className="text-xl font-bold mb-6 text-gray-800">
               Editar Utilizador #{editingUser.id}
             </h2>
             <form onSubmit={handleUpdate}>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block text-gray-600 text-sm font-medium mb-1.5">
                   Nome Completo
                 </label>
                 <input
@@ -337,11 +351,11 @@ const AdminUsers = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, full_name: e.target.value })
                   }
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block text-gray-600 text-sm font-medium mb-1.5">
                   Função
                 </label>
                 <select
@@ -349,7 +363,7 @@ const AdminUsers = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, role: e.target.value })
                   }
-                  className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   <option value="estudante">Estudante</option>
                   <option value="professor">Professor</option>
@@ -358,20 +372,20 @@ const AdminUsers = () => {
                 </select>
               </div>
               <div className="mb-4">
-                <label className="flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.is_active}
                     onChange={(e) =>
                       setFormData({ ...formData, is_active: e.target.checked })
                     }
-                    className="mr-2"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm">Conta Ativa</span>
+                  <span className="text-sm text-gray-600">Conta Ativa</span>
                 </label>
               </div>
-              <div className="mb-6">
-                <label className="flex items-center">
+              <div className="mb-4">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.is_superuser}
@@ -381,13 +395,15 @@ const AdminUsers = () => {
                         is_superuser: e.target.checked,
                       })
                     }
-                    className="mr-2"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm">SuperUser (Acesso Total)</span>
+                  <span className="text-sm text-gray-600">
+                    SuperUser (Acesso Total)
+                  </span>
                 </label>
               </div>
               <div className="mb-6">
-                <label className="flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.is_2fa_enabled}
@@ -397,24 +413,24 @@ const AdminUsers = () => {
                         is_2fa_enabled: e.target.checked,
                       })
                     }
-                    className="mr-2"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm">
+                  <span className="text-sm text-gray-600">
                     Ativar Autenticação 2FA (Email)
                   </span>
                 </label>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="mr-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                  className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
                 >
                   Guardar
                 </button>
@@ -426,12 +442,14 @@ const AdminUsers = () => {
 
       {/* Modal de Criação */}
       {isCreating && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
-            <h2 className="text-xl font-bold mb-4">Novo Utilizador</h2>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
+            <h2 className="text-xl font-bold mb-6 text-gray-800">
+              Novo Utilizador
+            </h2>
             <form onSubmit={handleCreate}>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block text-gray-600 text-sm font-medium mb-1.5">
                   Email
                 </label>
                 <input
@@ -444,11 +462,11 @@ const AdminUsers = () => {
                       email: e.target.value,
                     })
                   }
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block text-gray-600 text-sm font-medium mb-1.5">
                   Password
                 </label>
                 <input
@@ -461,11 +479,11 @@ const AdminUsers = () => {
                       password: e.target.value,
                     })
                   }
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block text-gray-600 text-sm font-medium mb-1.5">
                   Nome Completo
                 </label>
                 <input
@@ -477,11 +495,11 @@ const AdminUsers = () => {
                       full_name: e.target.value,
                     })
                   }
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
+                <label className="block text-gray-600 text-sm font-medium mb-1.5">
                   Função
                 </label>
                 <select
@@ -492,7 +510,7 @@ const AdminUsers = () => {
                       role: e.target.value,
                     })
                   }
-                  className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  className="border border-gray-200 rounded-xl w-full py-2.5 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   <option value="estudante">Estudante</option>
                   <option value="professor">Professor</option>
@@ -501,7 +519,7 @@ const AdminUsers = () => {
                 </select>
               </div>
               <div className="mb-4">
-                <label className="flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={createFormData.is_active}
@@ -511,13 +529,13 @@ const AdminUsers = () => {
                         is_active: e.target.checked,
                       })
                     }
-                    className="mr-2"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm">Conta Ativa</span>
+                  <span className="text-sm text-gray-600">Conta Ativa</span>
                 </label>
               </div>
               <div className="mb-6">
-                <label className="flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={createFormData.is_superuser}
@@ -527,22 +545,22 @@ const AdminUsers = () => {
                         is_superuser: e.target.checked,
                       })
                     }
-                    className="mr-2"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm">SuperUser</span>
+                  <span className="text-sm text-gray-600">SuperUser</span>
                 </label>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
-                  className="mr-2 px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                  className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-green-700"
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
                 >
                   Criar
                 </button>
@@ -554,23 +572,11 @@ const AdminUsers = () => {
 
       {/* Modal de Confirmação de Eliminação */}
       {userToDelete && (
-        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-96 transform transition-all scale-100">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in">
             <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg
-                  className="h-6 w-6 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+                <Trash2 className="h-6 w-6 text-red-500" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">
                 Eliminar Utilizador
@@ -583,16 +589,16 @@ const AdminUsers = () => {
                 ? <br />
                 Esta ação é irreversível.
               </p>
-              <div className="flex justify-center space-x-4">
+              <div className="flex justify-center gap-3">
                 <button
                   onClick={() => setUserToDelete(null)}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none transition-colors"
+                  className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none transition-colors shadow-lg"
+                  className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium text-sm shadow-sm"
                 >
                   Sim, Eliminar
                 </button>
