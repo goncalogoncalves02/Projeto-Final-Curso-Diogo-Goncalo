@@ -10,8 +10,8 @@ import { format, parse, startOfWeek, getDay, addWeeks } from "date-fns";
 import { pt } from "date-fns/locale";
 import api from "../../api/axios";
 import { Wand2, Search, X } from "lucide-react";
-import Modal from "../../components/Modal";
-import ModalPortal from "../../components/ModalPortal";
+import Modal from "../../components/ui/Modal";
+import ModalPortal from "../../components/ui/ModalPortal";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 // Configurar localização para Português
