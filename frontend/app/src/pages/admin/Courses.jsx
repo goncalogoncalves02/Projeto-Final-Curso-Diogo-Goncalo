@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../../api/axios";
 import Pagination from "../../components/Pagination";
 import SearchBar from "../../components/SearchBar";
@@ -6,7 +6,7 @@ import TableLoading from "../../components/TableLoading";
 import TableEmpty from "../../components/TableEmpty";
 import ActionButton from "../../components/ActionButton";
 import ModalPortal from "../../components/ModalPortal";
-import { Pencil, Trash2, Plus, Layers, X } from "lucide-react";
+import { Pencil, Trash2, Plus, Layers, X, Search } from "lucide-react";
 
 const AdminCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -25,6 +25,41 @@ const AdminCourses = () => {
   // Estado de pesquisa
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Estados de pesquisa para os selects de módulo/professor/sala
+  const [moduleSearch, setModuleSearch] = useState("");
+  const [showModuleSuggestions, setShowModuleSuggestions] = useState(false);
+  const [trainerSearch, setTrainerSearch] = useState("");
+  const [showTrainerSuggestions, setShowTrainerSuggestions] = useState(false);
+  const [classroomSearch, setClassroomSearch] = useState("");
+  const [showClassroomSuggestions, setShowClassroomSuggestions] =
+    useState(false);
+  const moduleSearchRef = useRef(null);
+  const trainerSearchRef = useRef(null);
+  const classroomSearchRef = useRef(null);
+
+  // Click-outside para fechar sugestões
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        moduleSearchRef.current &&
+        !moduleSearchRef.current.contains(e.target)
+      )
+        setShowModuleSuggestions(false);
+      if (
+        trainerSearchRef.current &&
+        !trainerSearchRef.current.contains(e.target)
+      )
+        setShowTrainerSuggestions(false);
+      if (
+        classroomSearchRef.current &&
+        !classroomSearchRef.current.contains(e.target)
+      )
+        setShowClassroomSuggestions(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Estados do form para editar e criar (inicializado com valores default)
   const initialFormState = {
     name: "",
@@ -33,6 +68,7 @@ const AdminCourses = () => {
     start_date: "",
     end_date: "",
     status: "planned",
+    schedule_type: "day",
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -109,6 +145,7 @@ const AdminCourses = () => {
       start_date: course.start_date,
       end_date: course.end_date,
       status: course.status,
+      schedule_type: course.schedule_type || "day",
     });
   };
 
@@ -505,53 +542,207 @@ const AdminCourses = () => {
                       <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
                         Selecione Módulo
                       </label>
-                      <select
-                        className="w-full border rounded p-2 text-sm"
-                        value={addModuleForm.module_id}
-                        onChange={(e) => {
-                          const selectedModule = availableModules.find(
-                            (m) => m.id === parseInt(e.target.value),
-                          );
-                          setAddModuleForm({
-                            ...addModuleForm,
-                            module_id: e.target.value,
-                            total_hours:
-                              selectedModule?.default_duration_hours || 25,
-                          });
-                        }}
-                        required
-                      >
-                        <option value="">-- Escolher Módulo --</option>
-                        {availableModules.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name} ({m.area}) - {m.default_duration_hours}h
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative" ref={moduleSearchRef}>
+                        <div className="flex items-center border rounded overflow-hidden focus-within:ring-2 focus-within:ring-blue-400 bg-white">
+                          <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+                          <input
+                            type="text"
+                            placeholder={
+                              addModuleForm.module_id
+                                ? availableModules.find(
+                                    (m) =>
+                                      m.id ===
+                                      parseInt(addModuleForm.module_id),
+                                  )?.name || "Pesquisar módulo..."
+                                : "Pesquisar módulo..."
+                            }
+                            value={moduleSearch}
+                            onChange={(e) => {
+                              setModuleSearch(e.target.value);
+                              setShowModuleSuggestions(true);
+                            }}
+                            onFocus={() => setShowModuleSuggestions(true)}
+                            className="w-full px-2 py-2 text-sm focus:outline-none"
+                          />
+                          {addModuleForm.module_id && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddModuleForm({
+                                  ...addModuleForm,
+                                  module_id: "",
+                                  total_hours: 25,
+                                });
+                                setModuleSearch("");
+                              }}
+                              className="p-1 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        {showModuleSuggestions && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                            {availableModules.filter(
+                              (m) =>
+                                !moduleSearch.trim() ||
+                                m.name
+                                  .toLowerCase()
+                                  .includes(moduleSearch.toLowerCase()) ||
+                                m.area
+                                  ?.toLowerCase()
+                                  .includes(moduleSearch.toLowerCase()),
+                            ).length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-gray-400">
+                                Nenhum módulo encontrado
+                              </div>
+                            ) : (
+                              availableModules
+                                .filter(
+                                  (m) =>
+                                    !moduleSearch.trim() ||
+                                    m.name
+                                      .toLowerCase()
+                                      .includes(moduleSearch.toLowerCase()) ||
+                                    m.area
+                                      ?.toLowerCase()
+                                      .includes(moduleSearch.toLowerCase()),
+                                )
+                                .map((m) => (
+                                  <button
+                                    type="button"
+                                    key={m.id}
+                                    onClick={() => {
+                                      setAddModuleForm({
+                                        ...addModuleForm,
+                                        module_id: String(m.id),
+                                        total_hours:
+                                          m.default_duration_hours || 25,
+                                      });
+                                      setModuleSearch("");
+                                      setShowModuleSuggestions(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                                      String(m.id) ===
+                                      String(addModuleForm.module_id)
+                                        ? "bg-blue-50 text-blue-700 font-medium"
+                                        : "text-gray-700"
+                                    }`}
+                                  >
+                                    <div className="font-medium">{m.name}</div>
+                                    <div className="text-xs text-gray-400">
+                                      {m.area} — {m.default_duration_hours}h
+                                    </div>
+                                  </button>
+                                ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mb-3">
                       <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
                         Professor
                       </label>
-                      <select
-                        className="w-full border rounded p-2 text-sm"
-                        value={addModuleForm.trainer_id}
-                        onChange={(e) =>
-                          setAddModuleForm({
-                            ...addModuleForm,
-                            trainer_id: e.target.value,
-                          })
-                        }
-                        required
-                      >
-                        <option value="">-- Escolher Professor --</option>
-                        {trainers.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.full_name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative" ref={trainerSearchRef}>
+                        <div className="flex items-center border rounded overflow-hidden focus-within:ring-2 focus-within:ring-blue-400 bg-white">
+                          <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+                          <input
+                            type="text"
+                            placeholder={
+                              addModuleForm.trainer_id
+                                ? trainers.find(
+                                    (t) =>
+                                      String(t.id) ===
+                                      String(addModuleForm.trainer_id),
+                                  )?.full_name || "Pesquisar professor..."
+                                : "Pesquisar professor..."
+                            }
+                            value={trainerSearch}
+                            onChange={(e) => {
+                              setTrainerSearch(e.target.value);
+                              setShowTrainerSuggestions(true);
+                            }}
+                            onFocus={() => setShowTrainerSuggestions(true)}
+                            className="w-full px-2 py-2 text-sm focus:outline-none"
+                          />
+                          {addModuleForm.trainer_id && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddModuleForm({
+                                  ...addModuleForm,
+                                  trainer_id: "",
+                                });
+                                setTrainerSearch("");
+                              }}
+                              className="p-1 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        {showTrainerSuggestions && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                            {trainers.filter(
+                              (t) =>
+                                !trainerSearch.trim() ||
+                                t.full_name
+                                  .toLowerCase()
+                                  .includes(trainerSearch.toLowerCase()) ||
+                                t.email
+                                  ?.toLowerCase()
+                                  .includes(trainerSearch.toLowerCase()),
+                            ).length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-gray-400">
+                                Nenhum professor encontrado
+                              </div>
+                            ) : (
+                              trainers
+                                .filter(
+                                  (t) =>
+                                    !trainerSearch.trim() ||
+                                    t.full_name
+                                      .toLowerCase()
+                                      .includes(trainerSearch.toLowerCase()) ||
+                                    t.email
+                                      ?.toLowerCase()
+                                      .includes(trainerSearch.toLowerCase()),
+                                )
+                                .map((t) => (
+                                  <button
+                                    type="button"
+                                    key={t.id}
+                                    onClick={() => {
+                                      setAddModuleForm({
+                                        ...addModuleForm,
+                                        trainer_id: String(t.id),
+                                      });
+                                      setTrainerSearch("");
+                                      setShowTrainerSuggestions(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                                      String(t.id) ===
+                                      String(addModuleForm.trainer_id)
+                                        ? "bg-blue-50 text-blue-700 font-medium"
+                                        : "text-gray-700"
+                                    }`}
+                                  >
+                                    <div className="font-medium">
+                                      {t.full_name}
+                                    </div>
+                                    {t.email && (
+                                      <div className="text-xs text-gray-400">
+                                        ({t.email})
+                                      </div>
+                                    )}
+                                  </button>
+                                ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 mb-3">
@@ -590,23 +781,102 @@ const AdminCourses = () => {
                       <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
                         Sala (Opcional)
                       </label>
-                      <select
-                        className="w-full border rounded p-2 text-sm"
-                        value={addModuleForm.classroom_id}
-                        onChange={(e) =>
-                          setAddModuleForm({
-                            ...addModuleForm,
-                            classroom_id: e.target.value,
-                          })
-                        }
-                      >
-                        <option value="">-- Sem sala definida --</option>
-                        {classrooms.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} ({c.type})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative" ref={classroomSearchRef}>
+                        <div className="flex items-center border rounded overflow-hidden focus-within:ring-2 focus-within:ring-blue-400 bg-white">
+                          <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+                          <input
+                            type="text"
+                            placeholder={
+                              addModuleForm.classroom_id
+                                ? classrooms.find(
+                                    (c) =>
+                                      String(c.id) ===
+                                      String(addModuleForm.classroom_id),
+                                  )?.name || "Pesquisar sala..."
+                                : "Pesquisar sala..."
+                            }
+                            value={classroomSearch}
+                            onChange={(e) => {
+                              setClassroomSearch(e.target.value);
+                              setShowClassroomSuggestions(true);
+                            }}
+                            onFocus={() => setShowClassroomSuggestions(true)}
+                            className="w-full px-2 py-2 text-sm focus:outline-none"
+                          />
+                          {addModuleForm.classroom_id && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddModuleForm({
+                                  ...addModuleForm,
+                                  classroom_id: "",
+                                });
+                                setClassroomSearch("");
+                              }}
+                              className="p-1 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        {showClassroomSuggestions && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                            {classrooms.filter(
+                              (c) =>
+                                !classroomSearch.trim() ||
+                                c.name
+                                  .toLowerCase()
+                                  .includes(classroomSearch.toLowerCase()) ||
+                                c.type
+                                  ?.toLowerCase()
+                                  .includes(classroomSearch.toLowerCase()),
+                            ).length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-gray-400">
+                                Nenhuma sala encontrada
+                              </div>
+                            ) : (
+                              classrooms
+                                .filter(
+                                  (c) =>
+                                    !classroomSearch.trim() ||
+                                    c.name
+                                      .toLowerCase()
+                                      .includes(
+                                        classroomSearch.toLowerCase(),
+                                      ) ||
+                                    c.type
+                                      ?.toLowerCase()
+                                      .includes(classroomSearch.toLowerCase()),
+                                )
+                                .map((c) => (
+                                  <button
+                                    type="button"
+                                    key={c.id}
+                                    onClick={() => {
+                                      setAddModuleForm({
+                                        ...addModuleForm,
+                                        classroom_id: String(c.id),
+                                      });
+                                      setClassroomSearch("");
+                                      setShowClassroomSuggestions(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                                      String(c.id) ===
+                                      String(addModuleForm.classroom_id)
+                                        ? "bg-blue-50 text-blue-700 font-medium"
+                                        : "text-gray-700"
+                                    }`}
+                                  >
+                                    <div className="font-medium">{c.name}</div>
+                                    <div className="text-xs text-gray-400">
+                                      {c.type}
+                                    </div>
+                                  </button>
+                                ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
@@ -730,6 +1000,24 @@ const AdminCourses = () => {
                     <option value="active">Ativo</option>
                     <option value="finished">Terminado</option>
                     <option value="cancelled">Cancelado</option>
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Tipo de Horário
+                  </label>
+                  <select
+                    value={formData.schedule_type}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        schedule_type: e.target.value,
+                      })
+                    }
+                    className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  >
+                    <option value="day">Diurno (08h-15h)</option>
+                    <option value="night">Noturno (16h-23h)</option>
                   </select>
                 </div>
 
@@ -864,6 +1152,24 @@ const AdminCourses = () => {
                     <option value="active">Ativo</option>
                     <option value="finished">Terminado</option>
                     <option value="cancelled">Cancelado</option>
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Tipo de Horário
+                  </label>
+                  <select
+                    value={createFormData.schedule_type}
+                    onChange={(e) =>
+                      setCreateFormData({
+                        ...createFormData,
+                        schedule_type: e.target.value,
+                      })
+                    }
+                    className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  >
+                    <option value="day">Diurno (08h-15h)</option>
+                    <option value="night">Noturno (16h-23h)</option>
                   </select>
                 </div>
 
