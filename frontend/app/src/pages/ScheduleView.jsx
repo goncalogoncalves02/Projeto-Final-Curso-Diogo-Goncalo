@@ -252,19 +252,14 @@ const ScheduleView = () => {
     });
   }, [lessons, viewMode]);
 
-  // Estilos dos eventos
+  // Estilos dos eventos (laranja = passada, azul = futura/a decorrer)
   const eventStyleGetter = (event) => {
-    const colors = [
-      { bg: "#3B82F6", border: "#2563EB" },
-      { bg: "#10B981", border: "#059669" },
-      { bg: "#F59E0B", border: "#D97706" },
-      { bg: "#EF4444", border: "#DC2626" },
-      { bg: "#8B5CF6", border: "#7C3AED" },
-      { bg: "#EC4899", border: "#DB2777" },
-    ];
+    const now = new Date();
+    const isPast = event.end < now;
 
-    const colorIndex = (event.resource.module_id || 0) % colors.length;
-    const color = colors[colorIndex];
+    const color = isPast
+      ? { bg: "#E8873B", border: "#C96A22" }   // laranja (passada)
+      : { bg: "#3B82F6", border: "#2563EB" };   // azul (futura/a decorrer)
 
     return {
       style: {
