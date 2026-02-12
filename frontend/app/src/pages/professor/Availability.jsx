@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import api from "../api/axios";
+import api from "../../api/axios";
 import { Trash2, Plus, Calendar } from "lucide-react";
-import ModalPortal from "../components/ModalPortal";
+import ModalPortal from "../../components/ui/ModalPortal";
 
 const Availability = () => {
   const [availabilities, setAvailabilities] = useState([]);
