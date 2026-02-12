@@ -9,7 +9,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import Modal from "../../components/Modal";
+import Modal from "../../components/ui/Modal";
 
 const AdminEnrollments = () => {
   const [courses, setCourses] = useState([]);
