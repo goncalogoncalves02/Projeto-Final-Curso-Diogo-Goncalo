@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Upload, User as UserIcon, Phone, Camera } from "lucide-react";
-import api from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import api from "../../api/axios";
+import { useAuth } from "../../context/AuthContext";
 
 const API_BASE = "http://localhost:8000";
 
