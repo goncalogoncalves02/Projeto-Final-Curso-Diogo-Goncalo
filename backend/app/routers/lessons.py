@@ -6,7 +6,7 @@ CRUD completo para gestão de aulas com validações críticas:
 2. Não alocar professor em 2 aulas ao mesmo tempo
 3. Não ultrapassar horas do módulo
 
-Também inclui endpoints de consulta por turma, formador e sala.
+Também inclui endpoints de consulta por turma, professor e sala.
 """
 
 from typing import List, Any, Optional
@@ -522,8 +522,8 @@ def get_lessons_by_trainer(
     end_date: Optional[date] = Query(None, description="Filtrar até esta data"),
 ):
     """
-    Lista o horário de um professor/formador.
-    Requisito 1.l: Consulta rápida de horário de formador com filtro por tempo.
+    Lista o horário de um professor.
+    Requisito 1.l: Consulta rápida de horário de professor com filtro por tempo.
     """
     # Obter todos os módulos deste professor
     course_modules = course_module_crud.get_multi(db, limit=1000)
