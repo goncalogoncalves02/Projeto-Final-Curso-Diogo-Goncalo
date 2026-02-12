@@ -1,7 +1,7 @@
 """
 Servico de Geracao de PDF
 --------------------------
-Gera fichas PDF de formandos e formadores usando fpdf2.
+Gera fichas PDF de estudantes e professores usando fpdf2.
 """
 
 import os
@@ -216,10 +216,10 @@ def generate_student_pdf(db: Session, user: User) -> bytes:
 
 def generate_professor_pdf(db: Session, user: User) -> bytes:
     """
-    Gera a Ficha do Formador em PDF.
+    Gera a Ficha do Professor em PDF.
     Inclui foto, dados pessoais e lista de cursos/modulos lecionados.
     """
-    pdf = ATECReport("Ficha do Formador")
+    pdf = ATECReport("Ficha do Professor")
     pdf.alias_nb_pages()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=20)

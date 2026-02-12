@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import {
   format,
@@ -12,9 +12,12 @@ import {
   getDay,
 } from "date-fns";
 import { pt } from "date-fns/locale";
-import api from "../api/axios";
-import { useAuth } from "../context/AuthContext";
-import Pagination from "../components/Pagination";
+import { Search, X } from "lucide-react";
+import api from "../../api/axios";
+import { useAuth } from "../../context/AuthContext";
+import Pagination from "../../components/ui/Pagination";
+import ModalPortal from "../../components/ui/ModalPortal";
+import Modal from "../../components/ui/Modal";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 // Configurar localização para Português
@@ -72,9 +75,27 @@ const ScheduleView = () => {
   // Para professores: marca se está a ver todas ou filtrado por turma
   const [showingAll, setShowingAll] = useState(true);
 
+  // Aula selecionada (modal de detalhes)
+  const [selectedLesson, setSelectedLesson] = useState(null);
+
+  // Searchable select
+  const [selectSearch, setSelectSearch] = useState("");
+  const [showSelectSuggestions, setShowSelectSuggestions] = useState(false);
+  const selectSearchRef = useRef(null);
+
   // Paginação da tabela de aulas
   const [tablePage, setTablePage] = useState(1);
   const TABLE_ITEMS_PER_PAGE = 10;
+
+  // Click-outside para fechar sugestões
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (selectSearchRef.current && !selectSearchRef.current.contains(e.target))
+        setShowSelectSuggestions(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Carregar dados de referência e aulas iniciais
   useEffect(() => {
@@ -247,19 +268,14 @@ const ScheduleView = () => {
     });
   }, [lessons, viewMode]);
 
-  // Estilos dos eventos
+  // Estilos dos eventos (laranja = passada, azul = futura/a decorrer)
   const eventStyleGetter = (event) => {
-    const colors = [
-      { bg: "#3B82F6", border: "#2563EB" },
-      { bg: "#10B981", border: "#059669" },
-      { bg: "#F59E0B", border: "#D97706" },
-      { bg: "#EF4444", border: "#DC2626" },
-      { bg: "#8B5CF6", border: "#7C3AED" },
-      { bg: "#EC4899", border: "#DB2777" },
-    ];
+    const now = new Date();
+    const isPast = event.end < now;
 
-    const colorIndex = (event.resource.module_id || 0) % colors.length;
-    const color = colors[colorIndex];
+    const color = isPast
+      ? { bg: "#E8873B", border: "#C96A22" }   // laranja (passada)
+      : { bg: "#3B82F6", border: "#2563EB" };   // azul (futura/a decorrer)
 
     return {
       style: {
@@ -271,6 +287,11 @@ const ScheduleView = () => {
         padding: "2px 6px",
       },
     };
+  };
+
+  // Clicar num evento para ver detalhes
+  const handleSelectEvent = (event) => {
+    setSelectedLesson(event.resource);
   };
 
   // Obter opções do select baseado no modo
@@ -351,6 +372,7 @@ const ScheduleView = () => {
                   onClick={() => {
                     setViewMode("course");
                     setSelectedId("");
+                    setSelectSearch("");
                   }}
                   className={`flex-1 px-3 py-2 text-sm font-medium transition ${
                     viewMode === "course"
@@ -364,6 +386,7 @@ const ScheduleView = () => {
                   onClick={() => {
                     setViewMode("trainer");
                     setSelectedId("");
+                    setSelectSearch("");
                   }}
                   className={`flex-1 px-3 py-2 text-sm font-medium transition ${
                     viewMode === "trainer"
@@ -371,12 +394,13 @@ const ScheduleView = () => {
                       : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  Formador
+                  Professor
                 </button>
                 <button
                   onClick={() => {
                     setViewMode("classroom");
                     setSelectedId("");
+                    setSelectSearch("");
                   }}
                   className={`flex-1 px-3 py-2 text-sm font-medium transition ${
                     viewMode === "classroom"
@@ -396,25 +420,96 @@ const ScheduleView = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {isProfessor ? "Filtrar por Turma" : "Turma"}
               </label>
-              <select
-                value={selectedId}
-                onChange={(e) => {
-                  setSelectedId(e.target.value);
-                  if (isProfessor) setShowingAll(e.target.value === "");
-                }}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">
-                  {isProfessor
-                    ? "Todas as minhas turmas"
-                    : "Selecionar turma..."}
-                </option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" ref={selectSearchRef}>
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+                  <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedId
+                        ? courses.find((c) => c.id === parseInt(selectedId))?.name || "Pesquisar turma..."
+                        : isProfessor
+                          ? "Todas as minhas turmas"
+                          : "Pesquisar turma..."
+                    }
+                    value={selectSearch}
+                    onChange={(e) => {
+                      setSelectSearch(e.target.value);
+                      setShowSelectSuggestions(true);
+                    }}
+                    onFocus={() => setShowSelectSuggestions(true)}
+                    className="w-full px-2 py-2 text-sm focus:outline-none"
+                  />
+                  {selectedId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedId("");
+                        setSelectSearch("");
+                        if (isProfessor) setShowingAll(true);
+                      }}
+                      className="p-1 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {showSelectSuggestions && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                    {isProfessor && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedId("");
+                          setShowingAll(true);
+                          setSelectSearch("");
+                          setShowSelectSuggestions(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 ${
+                          !selectedId ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700"
+                        }`}
+                      >
+                        Todas as minhas turmas
+                      </button>
+                    )}
+                    {courses.filter(
+                      (c) =>
+                        !selectSearch.trim() ||
+                        c.name.toLowerCase().includes(selectSearch.toLowerCase())
+                    ).length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-400">
+                        Nenhuma turma encontrada
+                      </div>
+                    ) : (
+                      courses
+                        .filter(
+                          (c) =>
+                            !selectSearch.trim() ||
+                            c.name.toLowerCase().includes(selectSearch.toLowerCase())
+                        )
+                        .map((c) => (
+                          <button
+                            type="button"
+                            key={c.id}
+                            onClick={() => {
+                              setSelectedId(String(c.id));
+                              if (isProfessor) setShowingAll(false);
+                              setSelectSearch("");
+                              setShowSelectSuggestions(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                              String(c.id) === String(selectedId)
+                                ? "bg-blue-50 text-blue-700 font-medium"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {c.name}
+                          </button>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -426,18 +521,76 @@ const ScheduleView = () => {
                 {viewMode === "trainer" && "Professor"}
                 {viewMode === "classroom" && "Sala"}
               </label>
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">{getPlaceholder()}</option>
-                {getSelectOptions().map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" ref={selectSearchRef}>
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+                  <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedId
+                        ? getSelectOptions().find((o) => String(o.id) === String(selectedId))?.name || getPlaceholder()
+                        : getPlaceholder()
+                    }
+                    value={selectSearch}
+                    onChange={(e) => {
+                      setSelectSearch(e.target.value);
+                      setShowSelectSuggestions(true);
+                    }}
+                    onFocus={() => setShowSelectSuggestions(true)}
+                    className="w-full px-2 py-2 text-sm focus:outline-none"
+                  />
+                  {selectedId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedId("");
+                        setSelectSearch("");
+                      }}
+                      className="p-1 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {showSelectSuggestions && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                    {getSelectOptions().filter(
+                      (o) =>
+                        !selectSearch.trim() ||
+                        o.name.toLowerCase().includes(selectSearch.toLowerCase())
+                    ).length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-400">
+                        Nenhum resultado encontrado
+                      </div>
+                    ) : (
+                      getSelectOptions()
+                        .filter(
+                          (o) =>
+                            !selectSearch.trim() ||
+                            o.name.toLowerCase().includes(selectSearch.toLowerCase())
+                        )
+                        .map((o) => (
+                          <button
+                            type="button"
+                            key={o.id}
+                            onClick={() => {
+                              setSelectedId(String(o.id));
+                              setSelectSearch("");
+                              setShowSelectSuggestions(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                              String(o.id) === String(selectedId)
+                                ? "bg-blue-50 text-blue-700 font-medium"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {o.name}
+                          </button>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -474,9 +627,10 @@ const ScheduleView = () => {
       {/* Calendário - Mostra sempre para professores, ou quando há seleção */}
       {!loading && (selectedId || isProfessor) && (
         <div
-          className="bg-white rounded-xl shadow-lg p-6"
+          className="bg-white rounded-xl shadow-lg p-6 overflow-x-auto"
           style={{ height: "70vh" }}
         >
+          <div style={{ minWidth: "800px", height: "100%" }}>
           <div className="mb-4 p-3 bg-gray-50 rounded-lg flex flex-wrap gap-4">
             {/* Cálculos dinâmicos baseados na vista */}
             {(() => {
@@ -536,6 +690,7 @@ const ScheduleView = () => {
             startAccessor="start"
             endAccessor="end"
             eventPropGetter={eventStyleGetter}
+            onSelectEvent={handleSelectEvent}
             messages={messages}
             culture="pt"
             // Estados controlados para navegação funcionar
@@ -561,6 +716,7 @@ const ScheduleView = () => {
             style={{ height: "calc(100% - 60px)" }}
             popup
           />
+          </div>
         </div>
       )}
 
@@ -666,6 +822,61 @@ const ScheduleView = () => {
             </div>
           );
         })()}
+      {/* Modal de detalhes da aula */}
+      {selectedLesson && (
+        <ModalPortal>
+          <Modal
+            isOpen={!!selectedLesson}
+            onClose={() => setSelectedLesson(null)}
+            title="Detalhes da Aula"
+          >
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Módulo</p>
+                <p className="text-base font-semibold text-gray-800">{selectedLesson.module_name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Curso</p>
+                <p className="text-base font-semibold text-gray-800">{selectedLesson.course_name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Professor</p>
+                <p className="text-base font-semibold text-gray-800">{selectedLesson.trainer_name}</p>
+              </div>
+              {selectedLesson.classroom_name && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Sala</p>
+                  <p className="text-base font-semibold text-gray-800">{selectedLesson.classroom_name}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Data</p>
+                  <p className="text-base font-semibold text-gray-800">
+                    {format(new Date(selectedLesson.date + "T00:00:00"), "d 'de' MMMM 'de' yyyy", { locale: pt })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Duração</p>
+                  <p className="text-base font-semibold text-gray-800">{selectedLesson.duration_hours}h</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Horário</p>
+                <p className="text-base font-semibold text-gray-800">
+                  {selectedLesson.start_time?.substring(0, 5)} - {selectedLesson.end_time?.substring(0, 5)}
+                </p>
+              </div>
+              {selectedLesson.notes && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Notas</p>
+                  <p className="text-base text-gray-700">{selectedLesson.notes}</p>
+                </div>
+              )}
+            </div>
+          </Modal>
+        </ModalPortal>
+      )}
     </div>
   );
 };

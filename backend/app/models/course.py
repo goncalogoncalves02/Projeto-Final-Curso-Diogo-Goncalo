@@ -8,6 +8,7 @@ Funcionalidades:
 - Definição de datas de início e fim.
 - Área de formação (ex: Informática).
 - Estado do curso (Planeado, Ativo, Terminado).
+- Tipo de horário (Diurno ou Noturno).
 """
 
 from sqlalchemy import Column, Integer, String, Date, Enum
@@ -21,6 +22,11 @@ class CourseStatus(str, enum.Enum):
     planned = "planned"  # Curso planeado mas ainda não iniciou
     finished = "finished"  # Curso terminado
     cancelled = "cancelled"  # Curso cancelado
+
+
+class ScheduleType(str, enum.Enum):
+    day = "day"  # Horário diurno: 08:00-11:00 / 12:00-15:00
+    night = "night"  # Horário noturno: 16:00-19:00 / 20:00-23:00
 
 
 class Course(Base):
@@ -47,6 +53,13 @@ class Course(Base):
     # Estado
     status = Column(
         Enum(CourseStatus), default=CourseStatus.planned, doc="Estado atual do curso"
+    )
+
+    # Tipo de Horário
+    schedule_type = Column(
+        Enum(ScheduleType),
+        default=ScheduleType.day,
+        doc="Diurno (day) ou Noturno (night)",
     )
 
     # RELACIONAMENTOS

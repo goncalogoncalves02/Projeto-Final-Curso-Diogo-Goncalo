@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import api from "../api/axios";
+import api from "../../api/axios";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
