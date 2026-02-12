@@ -30,16 +30,12 @@ ChartJS.register(
   BarElement,
 );
 
-const Dashboard = () => {
+const AdminDashboard = () => {
   const { user } = useAuth();
   const location = useLocation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Verifica se é admin ou secretaria
-  const canViewFullDashboard =
-    user?.is_superuser || user?.role === "admin" || user?.role === "secretaria";
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
@@ -55,35 +51,9 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Carregar dados quando a página é montada ou quando navega para ela
   useEffect(() => {
-    if (canViewFullDashboard) {
-      fetchStats();
-    } else {
-      setLoading(false);
-    }
-  }, [user, location.key, fetchStats, canViewFullDashboard]);
-
-  // Se não é admin ou secretaria, mostra dashboard simples
-  if (!canViewFullDashboard) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 max-w-2xl">
-          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-purple-600">
-            Olá, {user?.full_name?.split(" ")[0] || user?.email}! 👋
-          </h1>
-          <p className="mt-4 text-xl text-gray-500">
-            Bem-vindo ao painel de gestão da <strong>ATEC</strong>.
-          </p>
-          <div className="mt-8 p-4 bg-blue-50 rounded-lg text-blue-800 text-sm">
-            <p>
-              Usa a <strong>Barra Lateral</strong> à esquerda para navegar.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    fetchStats();
+  }, [user, location.key, fetchStats]);
 
   if (loading) {
     return (
@@ -101,49 +71,35 @@ const Dashboard = () => {
     );
   }
 
-  // Dados para gráfico de Cursos por Área
   const areaLabels = Object.keys(stats?.courses_by_area || {});
   const areaData = Object.values(stats?.courses_by_area || {});
   const areaColors = [
-    "#3B82F6",
-    "#10B981",
-    "#F59E0B",
-    "#EF4444",
-    "#8B5CF6",
-    "#EC4899",
-    "#06B6D4",
-    "#84CC16",
+    "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+    "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16",
   ];
 
   const coursesByAreaData = {
     labels: areaLabels,
-    datasets: [
-      {
-        label: "Cursos",
-        data: areaData,
-        backgroundColor: areaColors.slice(0, areaLabels.length),
-        borderWidth: 0,
-      },
-    ],
+    datasets: [{
+      label: "Cursos",
+      data: areaData,
+      backgroundColor: areaColors.slice(0, areaLabels.length),
+      borderWidth: 0,
+    }],
   };
 
-  // Dados para Top Professores
   const topTrainersData = {
-    labels:
-      stats?.top_trainers?.map((t) => t.name?.split(" ")[0] || "N/A") || [],
-    datasets: [
-      {
-        label: "Horas Lecionadas",
-        data: stats?.top_trainers?.map((t) => t.hours) || [],
-        backgroundColor: "#3B82F6",
-        borderRadius: 8,
-      },
-    ],
+    labels: stats?.top_trainers?.map((t) => t.name?.split(" ")[0] || "N/A") || [],
+    datasets: [{
+      label: "Horas Lecionadas",
+      data: stats?.top_trainers?.map((t) => t.hours) || [],
+      backgroundColor: "#3B82F6",
+      borderRadius: 8,
+    }],
   };
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
           Dashboard de Estatísticas
@@ -155,50 +111,33 @@ const Dashboard = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* Cursos Terminados */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 animate-fade-in-up animate-delay-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">
-                Cursos Terminados
-              </p>
-              <p className="text-4xl font-bold text-gray-800 mt-2">
-                {stats?.courses_finished || 0}
-              </p>
+              <p className="text-sm font-medium text-gray-500">Cursos Terminados</p>
+              <p className="text-4xl font-bold text-gray-800 mt-2">{stats?.courses_finished || 0}</p>
             </div>
             <div className="p-4 bg-green-100 rounded-xl">
               <BookCheck className="w-8 h-8 text-green-600" />
             </div>
           </div>
         </div>
-
-        {/* Cursos a Decorrer */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 animate-fade-in-up animate-delay-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">
-                Cursos a Decorrer
-              </p>
-              <p className="text-4xl font-bold text-gray-800 mt-2">
-                {stats?.courses_active || 0}
-              </p>
+              <p className="text-sm font-medium text-gray-500">Cursos a Decorrer</p>
+              <p className="text-4xl font-bold text-gray-800 mt-2">{stats?.courses_active || 0}</p>
             </div>
             <div className="p-4 bg-blue-100 rounded-xl">
               <GraduationCap className="w-8 h-8 text-blue-600" />
             </div>
           </div>
         </div>
-
-        {/* Estudantes Ativos */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 animate-fade-in-up animate-delay-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">
-                Estudantes Ativos
-              </p>
-              <p className="text-4xl font-bold text-gray-800 mt-2">
-                {stats?.students_active || 0}
-              </p>
+              <p className="text-sm font-medium text-gray-500">Estudantes Ativos</p>
+              <p className="text-4xl font-bold text-gray-800 mt-2">{stats?.students_active || 0}</p>
             </div>
             <div className="p-4 bg-purple-100 rounded-xl">
               <Users className="w-8 h-8 text-purple-600" />
@@ -209,7 +148,6 @@ const Dashboard = () => {
 
       {/* Course Lists Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Cursos a Decorrer - Lista */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <GraduationCap className="w-5 h-5 text-blue-500 mr-2" />
@@ -220,45 +158,26 @@ const Dashboard = () => {
               <table className="w-full">
                 <thead className="sticky top-0 bg-white">
                   <tr className="border-b border-gray-100">
-                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
-                      Curso
-                    </th>
-                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
-                      Área
-                    </th>
-                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
-                      Período
-                    </th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">Curso</th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">Área</th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">Período</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.courses_running.map((course) => (
-                    <tr
-                      key={course.id}
-                      className="border-b border-gray-50 hover:bg-gray-50"
-                    >
-                      <td className="py-2 px-3 font-medium text-gray-800 text-sm">
-                        {course.name}
-                      </td>
-                      <td className="py-2 px-3 text-gray-600 text-sm">
-                        {course.area || "-"}
-                      </td>
-                      <td className="py-2 px-3 text-gray-500 text-xs">
-                        {course.start_date} → {course.end_date || "..."}
-                      </td>
+                    <tr key={course.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="py-2 px-3 font-medium text-gray-800 text-sm">{course.name}</td>
+                      <td className="py-2 px-3 text-gray-600 text-sm">{course.area || "-"}</td>
+                      <td className="py-2 px-3 text-gray-500 text-xs">{course.start_date} → {course.end_date || "..."}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             ) : (
-              <p className="text-gray-400 text-center py-4">
-                Nenhum curso a decorrer
-              </p>
+              <p className="text-gray-400 text-center py-4">Nenhum curso a decorrer</p>
             )}
           </div>
         </div>
-
-        {/* Cursos a Iniciar - Lista */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <Calendar className="w-5 h-5 text-orange-500 mr-2" />
@@ -269,29 +188,16 @@ const Dashboard = () => {
               <table className="w-full">
                 <thead className="sticky top-0 bg-white">
                   <tr className="border-b border-gray-100">
-                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
-                      Curso
-                    </th>
-                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
-                      Área
-                    </th>
-                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">
-                      Início
-                    </th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">Curso</th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">Área</th>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-gray-500">Início</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.courses_starting_soon.map((course) => (
-                    <tr
-                      key={course.id}
-                      className="border-b border-gray-50 hover:bg-gray-50"
-                    >
-                      <td className="py-2 px-3 font-medium text-gray-800 text-sm">
-                        {course.name}
-                      </td>
-                      <td className="py-2 px-3 text-gray-600 text-sm">
-                        {course.area || "-"}
-                      </td>
+                    <tr key={course.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="py-2 px-3 font-medium text-gray-800 text-sm">{course.name}</td>
+                      <td className="py-2 px-3 text-gray-600 text-sm">{course.area || "-"}</td>
                       <td className="py-2 px-3">
                         <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
                           <Clock className="w-3 h-3 mr-1" />
@@ -303,9 +209,7 @@ const Dashboard = () => {
                 </tbody>
               </table>
             ) : (
-              <p className="text-gray-400 text-center py-4">
-                Nenhum curso a iniciar nos próximos 60 dias
-              </p>
+              <p className="text-gray-400 text-center py-4">Nenhum curso a iniciar nos próximos 60 dias</p>
             )}
           </div>
         </div>
@@ -313,11 +217,8 @@ const Dashboard = () => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Cursos por Área */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Cursos por Área
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Cursos por Área</h2>
           <div className="h-64 flex items-center justify-center">
             {areaLabels.length > 0 ? (
               <Doughnut
@@ -325,11 +226,7 @@ const Dashboard = () => {
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: "right",
-                    },
-                  },
+                  plugins: { legend: { position: "right" } },
                 }}
               />
             ) : (
@@ -337,8 +234,6 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-
-        {/* Top 10 Professores */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <Trophy className="w-5 h-5 text-yellow-500 mr-2" />
@@ -352,16 +247,8 @@ const Dashboard = () => {
                   responsive: true,
                   maintainAspectRatio: false,
                   indexAxis: "y",
-                  plugins: {
-                    legend: {
-                      display: false,
-                    },
-                  },
-                  scales: {
-                    x: {
-                      beginAtZero: true,
-                    },
-                  },
+                  plugins: { legend: { display: false } },
+                  scales: { x: { beginAtZero: true } },
                 }}
               />
             ) : (
@@ -373,51 +260,33 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Tabela Top Professores Detalhada */}
+      {/* Top Trainers Table */}
       {stats?.top_trainers?.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Detalhes dos Professores
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Detalhes dos Professores</h2>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                    #
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                    Nome
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    Horas Lecionadas
-                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">#</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Nome</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Horas Lecionadas</th>
                 </tr>
               </thead>
               <tbody>
                 {stats.top_trainers.map((trainer, index) => (
-                  <tr
-                    key={trainer.id}
-                    className="border-b border-gray-50 hover:bg-gray-50"
-                  >
+                  <tr key={trainer.id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="py-3 px-4">
-                      <span
-                        className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-                          index === 0
-                            ? "bg-yellow-100 text-yellow-700"
-                            : index === 1
-                              ? "bg-gray-100 text-gray-700"
-                              : index === 2
-                                ? "bg-orange-100 text-orange-700"
-                                : "bg-blue-50 text-blue-600"
-                        }`}
-                      >
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                        index === 0 ? "bg-yellow-100 text-yellow-700"
+                        : index === 1 ? "bg-gray-100 text-gray-700"
+                        : index === 2 ? "bg-orange-100 text-orange-700"
+                        : "bg-blue-50 text-blue-600"
+                      }`}>
                         {index + 1}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-medium text-gray-800">
-                      {trainer.name}
-                    </td>
+                    <td className="py-3 px-4 font-medium text-gray-800">{trainer.name}</td>
                     <td className="py-3 px-4 text-right">
                       <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
                         {trainer.hours}h
@@ -434,4 +303,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default AdminDashboard;
