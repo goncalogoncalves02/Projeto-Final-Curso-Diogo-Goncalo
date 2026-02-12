@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import api from "../../api/axios";
-import Modal from "../../components/Modal";
+import Modal from "../../components/ui/Modal";
 
 const DEFAULT_GRADE = { grade: "", comments: "" };
 
