@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../../api/axios";
 import UserFilesModal from "../../components/UserFilesModal";
-import Pagination from "../../components/Pagination";
-import SearchBar from "../../components/SearchBar";
-import TableLoading from "../../components/TableLoading";
-import TableEmpty from "../../components/TableEmpty";
-import ActionButton from "../../components/ActionButton";
-import ModalPortal from "../../components/ModalPortal";
+import Pagination from "../../components/ui/Pagination";
+import SearchBar from "../../components/ui/SearchBar";
+import TableLoading from "../../components/ui/TableLoading";
+import TableEmpty from "../../components/ui/TableEmpty";
+import ActionButton from "../../components/ui/ActionButton";
+import ModalPortal from "../../components/ui/ModalPortal";
 import {
   Pencil,
   Trash2,
