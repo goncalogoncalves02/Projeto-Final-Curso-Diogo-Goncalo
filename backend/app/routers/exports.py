@@ -1,7 +1,7 @@
 """
 Router de Exportacao PDF
 -------------------------
-Endpoints para exportar fichas de formandos e formadores em PDF.
+Endpoints para exportar fichas de professores e estudantes em PDF.
 Apenas Admin e Secretaria.
 """
 
@@ -57,7 +57,7 @@ def export_professor_pdf(
     current_user: User = Depends(deps.get_current_admin_or_secretaria),
 ):
     """
-    Exporta a Ficha do Formador em PDF.
+    Exporta a Ficha do Professor em PDF.
     Apenas Admin e Secretaria.
     """
     user = user_crud.get_user(db, user_id=user_id)
@@ -69,7 +69,7 @@ def export_professor_pdf(
     pdf_content = generate_professor_pdf(db, user)
 
     name = user.full_name or str(user.id)
-    filename = f"ficha_formador_{name}.pdf"
+    filename = f"ficha_professor_{name}.pdf"
     encoded_filename = quote(filename)
 
     return Response(
