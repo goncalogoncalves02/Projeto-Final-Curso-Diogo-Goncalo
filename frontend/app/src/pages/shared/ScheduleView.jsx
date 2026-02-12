@@ -13,11 +13,11 @@ import {
 } from "date-fns";
 import { pt } from "date-fns/locale";
 import { Search, X } from "lucide-react";
-import api from "../api/axios";
-import { useAuth } from "../context/AuthContext";
-import Pagination from "../components/Pagination";
-import ModalPortal from "../components/ModalPortal";
-import Modal from "../components/Modal";
+import api from "../../api/axios";
+import { useAuth } from "../../context/AuthContext";
+import Pagination from "../../components/ui/Pagination";
+import ModalPortal from "../../components/ui/ModalPortal";
+import Modal from "../../components/ui/Modal";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 // Configurar localização para Português
