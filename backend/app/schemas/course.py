@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import date
 from pydantic import BaseModel
-from app.models.course import CourseStatus
+from app.models.course import CourseStatus, ScheduleType
 
 
 # Base
@@ -12,6 +12,7 @@ class CourseBase(BaseModel):
     start_date: date
     end_date: date
     status: Optional[CourseStatus] = CourseStatus.planned
+    schedule_type: Optional[ScheduleType] = ScheduleType.day
 
 
 # Create
@@ -27,6 +28,7 @@ class CourseUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     status: Optional[CourseStatus] = None
+    schedule_type: Optional[ScheduleType] = None
 
 
 # Response
