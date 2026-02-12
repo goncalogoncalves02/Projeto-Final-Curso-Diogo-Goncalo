@@ -15,6 +15,8 @@ import { pt } from "date-fns/locale";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Pagination from "../components/Pagination";
+import ModalPortal from "../components/ModalPortal";
+import Modal from "../components/Modal";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 // Configurar localização para Português
@@ -71,6 +73,9 @@ const ScheduleView = () => {
 
   // Para professores: marca se está a ver todas ou filtrado por turma
   const [showingAll, setShowingAll] = useState(true);
+
+  // Aula selecionada (modal de detalhes)
+  const [selectedLesson, setSelectedLesson] = useState(null);
 
   // Paginação da tabela de aulas
   const [tablePage, setTablePage] = useState(1);
@@ -271,6 +276,11 @@ const ScheduleView = () => {
         padding: "2px 6px",
       },
     };
+  };
+
+  // Clicar num evento para ver detalhes
+  const handleSelectEvent = (event) => {
+    setSelectedLesson(event.resource);
   };
 
   // Obter opções do select baseado no modo
@@ -537,6 +547,7 @@ const ScheduleView = () => {
             startAccessor="start"
             endAccessor="end"
             eventPropGetter={eventStyleGetter}
+            onSelectEvent={handleSelectEvent}
             messages={messages}
             culture="pt"
             // Estados controlados para navegação funcionar
@@ -668,6 +679,61 @@ const ScheduleView = () => {
             </div>
           );
         })()}
+      {/* Modal de detalhes da aula */}
+      {selectedLesson && (
+        <ModalPortal>
+          <Modal
+            isOpen={!!selectedLesson}
+            onClose={() => setSelectedLesson(null)}
+            title="Detalhes da Aula"
+          >
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Módulo</p>
+                <p className="text-base font-semibold text-gray-800">{selectedLesson.module_name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Curso</p>
+                <p className="text-base font-semibold text-gray-800">{selectedLesson.course_name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Professor</p>
+                <p className="text-base font-semibold text-gray-800">{selectedLesson.trainer_name}</p>
+              </div>
+              {selectedLesson.classroom_name && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Sala</p>
+                  <p className="text-base font-semibold text-gray-800">{selectedLesson.classroom_name}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Data</p>
+                  <p className="text-base font-semibold text-gray-800">
+                    {format(new Date(selectedLesson.date + "T00:00:00"), "d 'de' MMMM 'de' yyyy", { locale: pt })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Duração</p>
+                  <p className="text-base font-semibold text-gray-800">{selectedLesson.duration_hours}h</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Horário</p>
+                <p className="text-base font-semibold text-gray-800">
+                  {selectedLesson.start_time?.substring(0, 5)} - {selectedLesson.end_time?.substring(0, 5)}
+                </p>
+              </div>
+              {selectedLesson.notes && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Notas</p>
+                  <p className="text-base text-gray-700">{selectedLesson.notes}</p>
+                </div>
+              )}
+            </div>
+          </Modal>
+        </ModalPortal>
+      )}
     </div>
   );
 };
