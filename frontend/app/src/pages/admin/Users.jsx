@@ -106,7 +106,7 @@ const AdminUsers = () => {
       const link = document.createElement("a");
       link.href = url;
 
-      const fichaType = user.role === "estudante" ? "formando" : "formador";
+      const fichaType = user.role === "estudante" ? "estudante" : "professor";
       link.download = `ficha_${fichaType}_${user.full_name || user.id}.pdf`;
 
       document.body.appendChild(link);
