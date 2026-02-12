@@ -474,9 +474,10 @@ const ScheduleView = () => {
       {/* Calendário - Mostra sempre para professores, ou quando há seleção */}
       {!loading && (selectedId || isProfessor) && (
         <div
-          className="bg-white rounded-xl shadow-lg p-6"
+          className="bg-white rounded-xl shadow-lg p-6 overflow-x-auto"
           style={{ height: "70vh" }}
         >
+          <div style={{ minWidth: "800px", height: "100%" }}>
           <div className="mb-4 p-3 bg-gray-50 rounded-lg flex flex-wrap gap-4">
             {/* Cálculos dinâmicos baseados na vista */}
             {(() => {
@@ -561,6 +562,7 @@ const ScheduleView = () => {
             style={{ height: "calc(100% - 60px)" }}
             popup
           />
+          </div>
         </div>
       )}
 
