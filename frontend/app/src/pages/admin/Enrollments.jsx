@@ -16,6 +16,11 @@ const AdminEnrollments = () => {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [enrollments, setEnrollments] = useState([]);
 
+  // Searchable course select
+  const [courseSearch, setCourseSearch] = useState("");
+  const [showCourseSuggestions, setShowCourseSuggestions] = useState(false);
+  const courseSearchRef = useRef(null);
+
   // Search bar state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -49,11 +54,14 @@ const AdminEnrollments = () => {
     fetchCourses();
   }, []);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setShowDropdown(false);
+      }
+      if (courseSearchRef.current && !courseSearchRef.current.contains(e.target)) {
+        setShowCourseSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -254,18 +262,83 @@ const AdminEnrollments = () => {
           <label className="block text-gray-700 text-sm font-bold mb-2">
             1. Selecionar Curso
           </label>
-          <select
-            value={selectedCourse}
-            onChange={handleCourseChange}
-            className="block w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
-          >
-            <option value="">Selecione um curso...</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.area})
-              </option>
-            ))}
-          </select>
+          <div className="relative" ref={courseSearchRef}>
+            <div className="flex items-center bg-gray-50 border border-gray-300 rounded overflow-hidden focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white">
+              <Search className="w-4 h-4 text-gray-400 ml-3 shrink-0" />
+              <input
+                type="text"
+                placeholder={
+                  selectedCourse
+                    ? courses.find((c) => c.id === parseInt(selectedCourse))?.name || "Pesquisar curso..."
+                    : "Pesquisar curso..."
+                }
+                value={courseSearch}
+                onChange={(e) => {
+                  setCourseSearch(e.target.value);
+                  setShowCourseSuggestions(true);
+                }}
+                onFocus={() => setShowCourseSuggestions(true)}
+                className="w-full px-3 py-3 text-sm text-gray-700 focus:outline-none bg-transparent"
+              />
+              {selectedCourse && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCourse("");
+                    setEnrollments([]);
+                    setCourseSearch("");
+                    resetSearch();
+                  }}
+                  className="p-1 mr-2 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {showCourseSuggestions && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                {courses.filter(
+                  (c) =>
+                    !courseSearch.trim() ||
+                    c.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                    c.area?.toLowerCase().includes(courseSearch.toLowerCase())
+                ).length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-gray-400">
+                    Nenhum curso encontrado
+                  </div>
+                ) : (
+                  courses
+                    .filter(
+                      (c) =>
+                        !courseSearch.trim() ||
+                        c.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                        c.area?.toLowerCase().includes(courseSearch.toLowerCase())
+                    )
+                    .map((c) => (
+                      <button
+                        type="button"
+                        key={c.id}
+                        onClick={() => {
+                          setSelectedCourse(String(c.id));
+                          fetchEnrollments(String(c.id));
+                          setCourseSearch("");
+                          setShowCourseSuggestions(false);
+                          resetSearch();
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                          String(c.id) === String(selectedCourse)
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        <div className="font-medium">{c.name}</div>
+                        <div className="text-xs text-gray-400">{c.area}</div>
+                      </button>
+                    ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Enroll New Student - Search Bar */}
