@@ -348,20 +348,14 @@ const Schedule = () => {
     }
   };
 
-  // Estilos dos eventos
+  // Estilos dos eventos (laranja = passada, azul = futura/a decorrer)
   const eventStyleGetter = (event) => {
-    const colors = [
-      { bg: "#3B82F6", border: "#2563EB" }, // blue
-      { bg: "#10B981", border: "#059669" }, // green
-      { bg: "#F59E0B", border: "#D97706" }, // amber
-      { bg: "#EF4444", border: "#DC2626" }, // red
-      { bg: "#8B5CF6", border: "#7C3AED" }, // purple
-      { bg: "#EC4899", border: "#DB2777" }, // pink
-    ];
+    const now = new Date();
+    const isPast = event.end < now;
 
-    // Usar o module_id para determinar a cor
-    const colorIndex = (event.resource.module_id || 0) % colors.length;
-    const color = colors[colorIndex];
+    const color = isPast
+      ? { bg: "#E8873B", border: "#C96A22" }   // laranja (passada)
+      : { bg: "#3B82F6", border: "#2563EB" };   // azul (futura/a decorrer)
 
     return {
       style: {
