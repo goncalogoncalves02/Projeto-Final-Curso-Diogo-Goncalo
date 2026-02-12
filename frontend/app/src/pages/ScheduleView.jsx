@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import {
   format,
@@ -12,6 +12,7 @@ import {
   getDay,
 } from "date-fns";
 import { pt } from "date-fns/locale";
+import { Search, X } from "lucide-react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Pagination from "../components/Pagination";
@@ -77,9 +78,24 @@ const ScheduleView = () => {
   // Aula selecionada (modal de detalhes)
   const [selectedLesson, setSelectedLesson] = useState(null);
 
+  // Searchable select
+  const [selectSearch, setSelectSearch] = useState("");
+  const [showSelectSuggestions, setShowSelectSuggestions] = useState(false);
+  const selectSearchRef = useRef(null);
+
   // Paginação da tabela de aulas
   const [tablePage, setTablePage] = useState(1);
   const TABLE_ITEMS_PER_PAGE = 10;
+
+  // Click-outside para fechar sugestões
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (selectSearchRef.current && !selectSearchRef.current.contains(e.target))
+        setShowSelectSuggestions(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Carregar dados de referência e aulas iniciais
   useEffect(() => {
@@ -356,6 +372,7 @@ const ScheduleView = () => {
                   onClick={() => {
                     setViewMode("course");
                     setSelectedId("");
+                    setSelectSearch("");
                   }}
                   className={`flex-1 px-3 py-2 text-sm font-medium transition ${
                     viewMode === "course"
@@ -369,6 +386,7 @@ const ScheduleView = () => {
                   onClick={() => {
                     setViewMode("trainer");
                     setSelectedId("");
+                    setSelectSearch("");
                   }}
                   className={`flex-1 px-3 py-2 text-sm font-medium transition ${
                     viewMode === "trainer"
@@ -376,12 +394,13 @@ const ScheduleView = () => {
                       : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  Formador
+                  Professor
                 </button>
                 <button
                   onClick={() => {
                     setViewMode("classroom");
                     setSelectedId("");
+                    setSelectSearch("");
                   }}
                   className={`flex-1 px-3 py-2 text-sm font-medium transition ${
                     viewMode === "classroom"
@@ -401,25 +420,96 @@ const ScheduleView = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {isProfessor ? "Filtrar por Turma" : "Turma"}
               </label>
-              <select
-                value={selectedId}
-                onChange={(e) => {
-                  setSelectedId(e.target.value);
-                  if (isProfessor) setShowingAll(e.target.value === "");
-                }}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">
-                  {isProfessor
-                    ? "Todas as minhas turmas"
-                    : "Selecionar turma..."}
-                </option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" ref={selectSearchRef}>
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+                  <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedId
+                        ? courses.find((c) => c.id === parseInt(selectedId))?.name || "Pesquisar turma..."
+                        : isProfessor
+                          ? "Todas as minhas turmas"
+                          : "Pesquisar turma..."
+                    }
+                    value={selectSearch}
+                    onChange={(e) => {
+                      setSelectSearch(e.target.value);
+                      setShowSelectSuggestions(true);
+                    }}
+                    onFocus={() => setShowSelectSuggestions(true)}
+                    className="w-full px-2 py-2 text-sm focus:outline-none"
+                  />
+                  {selectedId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedId("");
+                        setSelectSearch("");
+                        if (isProfessor) setShowingAll(true);
+                      }}
+                      className="p-1 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {showSelectSuggestions && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                    {isProfessor && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedId("");
+                          setShowingAll(true);
+                          setSelectSearch("");
+                          setShowSelectSuggestions(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 ${
+                          !selectedId ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700"
+                        }`}
+                      >
+                        Todas as minhas turmas
+                      </button>
+                    )}
+                    {courses.filter(
+                      (c) =>
+                        !selectSearch.trim() ||
+                        c.name.toLowerCase().includes(selectSearch.toLowerCase())
+                    ).length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-400">
+                        Nenhuma turma encontrada
+                      </div>
+                    ) : (
+                      courses
+                        .filter(
+                          (c) =>
+                            !selectSearch.trim() ||
+                            c.name.toLowerCase().includes(selectSearch.toLowerCase())
+                        )
+                        .map((c) => (
+                          <button
+                            type="button"
+                            key={c.id}
+                            onClick={() => {
+                              setSelectedId(String(c.id));
+                              if (isProfessor) setShowingAll(false);
+                              setSelectSearch("");
+                              setShowSelectSuggestions(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                              String(c.id) === String(selectedId)
+                                ? "bg-blue-50 text-blue-700 font-medium"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {c.name}
+                          </button>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -431,18 +521,76 @@ const ScheduleView = () => {
                 {viewMode === "trainer" && "Professor"}
                 {viewMode === "classroom" && "Sala"}
               </label>
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">{getPlaceholder()}</option>
-                {getSelectOptions().map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" ref={selectSearchRef}>
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+                  <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedId
+                        ? getSelectOptions().find((o) => String(o.id) === String(selectedId))?.name || getPlaceholder()
+                        : getPlaceholder()
+                    }
+                    value={selectSearch}
+                    onChange={(e) => {
+                      setSelectSearch(e.target.value);
+                      setShowSelectSuggestions(true);
+                    }}
+                    onFocus={() => setShowSelectSuggestions(true)}
+                    className="w-full px-2 py-2 text-sm focus:outline-none"
+                  />
+                  {selectedId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedId("");
+                        setSelectSearch("");
+                      }}
+                      className="p-1 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                {showSelectSuggestions && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                    {getSelectOptions().filter(
+                      (o) =>
+                        !selectSearch.trim() ||
+                        o.name.toLowerCase().includes(selectSearch.toLowerCase())
+                    ).length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-400">
+                        Nenhum resultado encontrado
+                      </div>
+                    ) : (
+                      getSelectOptions()
+                        .filter(
+                          (o) =>
+                            !selectSearch.trim() ||
+                            o.name.toLowerCase().includes(selectSearch.toLowerCase())
+                        )
+                        .map((o) => (
+                          <button
+                            type="button"
+                            key={o.id}
+                            onClick={() => {
+                              setSelectedId(String(o.id));
+                              setSelectSearch("");
+                              setShowSelectSuggestions(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                              String(o.id) === String(selectedId)
+                                ? "bg-blue-50 text-blue-700 font-medium"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {o.name}
+                          </button>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
