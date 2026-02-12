@@ -479,9 +479,10 @@ const Schedule = () => {
       )}
 
       <div
-        className="bg-white rounded-xl shadow-lg p-6"
+        className="bg-white rounded-xl shadow-lg p-6 overflow-x-auto"
         style={{ height: "75vh" }}
       >
+        <div style={{ minWidth: "800px", height: "100%" }}>
         <Calendar
           localizer={localizer}
           events={events}
@@ -515,6 +516,7 @@ const Schedule = () => {
           max={new Date(2020, 0, 1, 23, 0)} // 23:00
           style={{ height: "100%" }}
         />
+        </div>
       </div>
 
       {/* Modal de Criar/Editar */}
