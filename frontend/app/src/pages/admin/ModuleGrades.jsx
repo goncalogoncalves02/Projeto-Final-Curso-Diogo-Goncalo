@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { Search, X } from "lucide-react";
 import api from "../../api/axios";
 import Modal from "../../components/Modal";
 
@@ -21,6 +22,11 @@ const AdminModuleGrades = () => {
     message: "",
     type: "info",
   });
+
+  // Searchable course select
+  const [courseSearch, setCourseSearch] = useState("");
+  const [showCourseSuggestions, setShowCourseSuggestions] = useState(false);
+  const courseSearchRef = useRef(null);
 
   // Grade Editing State
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
@@ -44,6 +50,16 @@ const AdminModuleGrades = () => {
       }
     };
     fetchCourses();
+  }, []);
+
+  // Click-outside para fechar sugestões
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (courseSearchRef.current && !courseSearchRef.current.contains(e.target))
+        setShowCourseSuggestions(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // When course changes, fetch enrollments and modules
@@ -158,26 +174,86 @@ const AdminModuleGrades = () => {
       </h1>
 
       {/* Top Bar: Course Selection */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6 flex items-center space-x-4">
-        <label className="font-bold text-gray-700">Curso:</label>
-        <select
-          className="border p-2 rounded w-64"
-          value={selectedCourseId}
-          onChange={(e) => {
-            setSelectedCourseId(e.target.value);
-            setSelectedEnrollment(null);
-          }}
-        >
-          <option value="">-- Selecione um Curso --</option>
-          {courses.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
+        <label className="font-bold text-gray-700 shrink-0">Curso:</label>
+        <div className="relative w-full sm:w-80" ref={courseSearchRef}>
+          <div className="flex items-center border rounded overflow-hidden focus-within:ring-2 focus-within:ring-blue-400 bg-white">
+            <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+            <input
+              type="text"
+              placeholder={
+                selectedCourseId
+                  ? courses.find((c) => c.id === parseInt(selectedCourseId))?.name || "Pesquisar curso..."
+                  : "Pesquisar curso..."
+              }
+              value={courseSearch}
+              onChange={(e) => {
+                setCourseSearch(e.target.value);
+                setShowCourseSuggestions(true);
+              }}
+              onFocus={() => setShowCourseSuggestions(true)}
+              className="w-full px-2 py-2 text-sm focus:outline-none"
+            />
+            {selectedCourseId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCourseId("");
+                  setSelectedEnrollment(null);
+                  setCourseSearch("");
+                }}
+                className="p-1 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+          {showCourseSuggestions && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+              {courses.filter(
+                (c) =>
+                  !courseSearch.trim() ||
+                  c.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                  c.area?.toLowerCase().includes(courseSearch.toLowerCase())
+              ).length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-400">
+                  Nenhum curso encontrado
+                </div>
+              ) : (
+                courses
+                  .filter(
+                    (c) =>
+                      !courseSearch.trim() ||
+                      c.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                      c.area?.toLowerCase().includes(courseSearch.toLowerCase())
+                  )
+                  .map((c) => (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => {
+                        setSelectedCourseId(String(c.id));
+                        setSelectedEnrollment(null);
+                        setCourseSearch("");
+                        setShowCourseSuggestions(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                        String(c.id) === String(selectedCourseId)
+                          ? "bg-blue-50 text-blue-700 font-medium"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <div className="font-medium">{c.name}</div>
+                      <div className="text-xs text-gray-400">{c.area}</div>
+                    </button>
+                  ))
+              )}
+            </div>
+          )}
+        </div>
 
         {courseModules.length > 0 && (
-          <span className="text-sm text-gray-500 ml-4">
+          <span className="text-sm text-gray-500">
             {courseModules.length} módulos | {enrollments.length} alunos
             inscritos
           </span>
