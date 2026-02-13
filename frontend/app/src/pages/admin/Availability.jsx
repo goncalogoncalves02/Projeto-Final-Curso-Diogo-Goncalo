@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../../api/axios";
-import { Calendar, Search, User } from "lucide-react";
+import { Calendar, Search, User, X } from "lucide-react";
 
 const AdminAvailability = () => {
   const [users, setUsers] = useState([]);
@@ -8,6 +8,8 @@ const AdminAvailability = () => {
   const [availabilities, setAvailabilities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef(null);
 
   const daysOfWeek = [
     { id: 1, name: "Domingo" },
@@ -33,8 +35,19 @@ const AdminAvailability = () => {
     fetchUsers();
   }, []);
 
+  // Click-outside para fechar sugestões
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target))
+        setShowSuggestions(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Filter users based on search term
   const filteredUsers = users.filter((user) => {
+    if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
     return (
       user.email?.toLowerCase().includes(term) ||
@@ -42,9 +55,10 @@ const AdminAvailability = () => {
     );
   });
 
-  const handleUserChange = (e) => {
-    const userId = e.target.value;
+  const handleSelectUser = (userId) => {
     setSelectedUser(userId);
+    setSearchTerm("");
+    setShowSuggestions(false);
     if (userId) {
       fetchAvailability(userId);
     } else {
@@ -90,43 +104,60 @@ const AdminAvailability = () => {
           Selecionar Professor
         </label>
 
-        {/* Search Input */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Pesquisar por nome ou email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-gray-50"
-          />
-        </div>
-
-        <div className="relative">
-          <select
-            value={selectedUser}
-            onChange={handleUserChange}
-            className="block appearance-none w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
-          >
-            <option value="">
-              Selecione um professor... ({filteredUsers.length} encontrados)
-            </option>
-            {filteredUsers.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.full_name || user.email}{" "}
-                {user.full_name ? `(${user.email})` : ""}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-            <svg
-              className="fill-current h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-            >
-              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-            </svg>
+        <div className="relative w-full sm:w-96" ref={searchRef}>
+          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-400 bg-white">
+            <Search className="w-4 h-4 text-gray-400 ml-3 shrink-0" />
+            <input
+              type="text"
+              placeholder={
+                selectedUser
+                  ? users.find((u) => String(u.id) === String(selectedUser))?.full_name || "Pesquisar professor..."
+                  : "Pesquisar professor..."
+              }
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              className="w-full px-2 py-2 text-sm focus:outline-none"
+            />
+            {selectedUser && (
+              <button
+                type="button"
+                onClick={() => handleSelectUser("")}
+                className="p-1.5 mr-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Limpar seleção"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
+          {showSuggestions && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
+              {filteredUsers.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-400">
+                  Nenhum professor encontrado
+                </div>
+              ) : (
+                filteredUsers.map((u) => (
+                  <button
+                    type="button"
+                    key={u.id}
+                    onClick={() => handleSelectUser(String(u.id))}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                      String(u.id) === String(selectedUser)
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    <div className="font-medium">{u.full_name || u.email}</div>
+                    <div className="text-xs text-gray-400">{u.email}</div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 
