@@ -117,8 +117,8 @@ const AdminCourses = () => {
     if (!courseToDelete) return;
     try {
       await api.delete(`/courses/${courseToDelete.id}`);
-      setCourses(courses.filter((c) => c.id !== courseToDelete.id));
       setCourseToDelete(null);
+      fetchCourses(currentPage, searchQuery);
     } catch {
       alert("Erro ao eliminar curso.");
     }
@@ -127,10 +127,10 @@ const AdminCourses = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/courses/", createFormData);
-      setCourses([...courses, response.data]);
+      await api.post("/courses/", createFormData);
       setIsCreating(false);
       setCreateFormData(initialFormState);
+      fetchCourses(currentPage, searchQuery);
     } catch (error) {
       alert(error.response?.data?.detail || "Erro ao criar curso.");
     }
@@ -152,11 +152,9 @@ const AdminCourses = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.put(`/courses/${editingCourse.id}`, formData);
-      setCourses(
-        courses.map((c) => (c.id === editingCourse.id ? response.data : c)),
-      );
+      await api.put(`/courses/${editingCourse.id}`, formData);
       setEditingCourse(null);
+      fetchCourses(currentPage, searchQuery);
     } catch {
       alert("Erro ao atualizar curso.");
     }
