@@ -122,8 +122,8 @@ const AdminUsers = () => {
     if (!userToDelete) return;
     try {
       await api.delete(`/users/${userToDelete.id}`);
-      setUsers(users.filter((u) => u.id !== userToDelete.id));
       setUserToDelete(null);
+      fetchUsers(currentPage, searchQuery);
     } catch {
       alert("Erro ao eliminar utilizador.");
     }
@@ -132,8 +132,7 @@ const AdminUsers = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/users/", createFormData);
-      setUsers([...users, response.data]);
+      await api.post("/users/", createFormData);
       setIsCreating(false);
       setCreateFormData({
         email: "",
@@ -144,6 +143,7 @@ const AdminUsers = () => {
         is_superuser: false,
         is_2fa_enabled: false,
       });
+      fetchUsers(currentPage, searchQuery);
     } catch (error) {
       alert(error.response?.data?.detail || "Erro ao criar utilizador.");
     }
@@ -163,9 +163,9 @@ const AdminUsers = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.put(`/users/${editingUser.id}`, formData);
-      setUsers(users.map((u) => (u.id === editingUser.id ? response.data : u)));
+      await api.put(`/users/${editingUser.id}`, formData);
       setEditingUser(null);
+      fetchUsers(currentPage, searchQuery);
     } catch {
       alert("Erro ao atualizar utilizador.");
     }
