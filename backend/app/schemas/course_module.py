@@ -31,3 +31,16 @@ class CourseModule(CourseModuleBase):
 
     class Config:
         from_attributes = True
+
+
+class CourseModuleHoursInfo(BaseModel):
+    id: int
+    order: int
+    module_name: str
+    trainer_name: str
+    total_hours: int
+    scheduled_hours: float
+    remaining_hours: float
+
+    class Config:
+        from_attributes = True
