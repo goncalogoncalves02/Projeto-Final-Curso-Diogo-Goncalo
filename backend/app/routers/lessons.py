@@ -404,6 +404,27 @@ def update_lesson(
     return lesson_crud.update(db, db_obj=lesson, obj_in=lesson_in)
 
 
+@router.delete("/by-course/{course_id}")
+def delete_lessons_by_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(deps.get_current_active_superuser),
+):
+    """Remove todas as aulas de um curso."""
+    course_modules = course_module_crud.get_by_course(db, course_id=course_id)
+    if not course_modules:
+        return {"deleted": 0}
+
+    module_ids = [cm.id for cm in course_modules]
+    lessons = lesson_crud.get_by_course_module_ids(db, course_module_ids=module_ids)
+    count = len(lessons)
+
+    for lesson in lessons:
+        lesson_crud.remove(db, id=lesson.id)
+
+    return {"deleted": count}
+
+
 @router.delete("/{lesson_id}", response_model=Lesson)
 def delete_lesson(
     lesson_id: int,
