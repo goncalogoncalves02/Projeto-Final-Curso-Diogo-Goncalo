@@ -507,7 +507,7 @@ const Schedule = () => {
           step={30}
           timeslots={2}
           min={new Date(2020, 0, 1, 7, 0)} // 07:00
-          max={new Date(2020, 0, 1, 23, 0)} // 23:00
+          max={new Date(2020, 0, 1, 23, 59)} // 23:00
           style={{ height: "100%" }}
         />
         </div>
