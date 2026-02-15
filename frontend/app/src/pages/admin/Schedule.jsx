@@ -1,7 +1,7 @@
 import {
   useState,
   useEffect,
-  useCallback as useCallbackReact,
+  useCallback,
   useMemo,
   useRef,
 } from "react";
@@ -9,9 +9,10 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addWeeks } from "date-fns";
 import { pt } from "date-fns/locale";
 import api from "../../api/axios";
-import { Wand2, Search, X } from "lucide-react";
+import { Wand2, Search, X, Trash2 } from "lucide-react";
 import Modal from "../../components/ui/Modal";
 import ModalPortal from "../../components/ui/ModalPortal";
+import Pagination from "../../components/ui/Pagination";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 // Configurar localização para Português
@@ -77,6 +78,12 @@ const Schedule = () => {
   // Info de horas do módulo
   const [hoursInfo, setHoursInfo] = useState(null);
 
+  // Estado da tabela de horas dos módulos
+  const [modulesHours, setModulesHours] = useState([]);
+  const [modulesHoursLoading, setModulesHoursLoading] = useState(false);
+  const [modulesHoursPage, setModulesHoursPage] = useState(1);
+  const MODULES_PER_PAGE = 5;
+
   // Estado de geração automática
   const [selectedCourseFilter, setSelectedCourseFilter] = useState("");
   const [courseSearchQuery, setCourseSearchQuery] = useState("");
@@ -86,6 +93,10 @@ const Schedule = () => {
   const [autoGenPreview, setAutoGenPreview] = useState(null);
   const [autoGenLoading, setAutoGenLoading] = useState(false);
   const [autoGenStep, setAutoGenStep] = useState("preview"); // "preview" | "done"
+
+  // Estado do botão "Apagar Todas as Aulas"
+  const [deleteAllModalOpen, setDeleteAllModalOpen] = useState(false);
+  const [deleteAllLoading, setDeleteAllLoading] = useState(false);
 
   // Fechar sugestões ao clicar fora
   useEffect(() => {
@@ -121,7 +132,7 @@ const Schedule = () => {
   }, [courses, selectedCourseFilter]);
 
   // Carregar dados
-  const fetchData = useCallbackReact(async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [lessonsRes, coursesRes, classroomsRes] = await Promise.all([
@@ -145,6 +156,36 @@ const Schedule = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Carregar horas dos módulos quando curso é selecionado
+  const fetchModulesHours = useCallback(async () => {
+    if (!selectedCourseFilter) {
+      setModulesHours([]);
+      return;
+    }
+    try {
+      setModulesHoursLoading(true);
+      const res = await api.get(`/courses/${selectedCourseFilter}/modules-hours`);
+      setModulesHours(res.data);
+      setModulesHoursPage(1);
+    } catch (err) {
+      console.error("Erro ao carregar horas dos módulos:", err);
+    } finally {
+      setModulesHoursLoading(false);
+    }
+  }, [selectedCourseFilter]);
+
+  useEffect(() => {
+    fetchModulesHours();
+  }, [fetchModulesHours]);
+
+  // Paginação client-side da tabela de horas
+  const paginatedModulesHours = useMemo(() => {
+    const start = (modulesHoursPage - 1) * MODULES_PER_PAGE;
+    return modulesHours.slice(start, start + MODULES_PER_PAGE);
+  }, [modulesHours, modulesHoursPage]);
+
+  const modulesHoursTotalPages = Math.ceil(modulesHours.length / MODULES_PER_PAGE);
 
   // Carregar módulos quando o curso é selecionado
   useEffect(() => {
@@ -278,6 +319,7 @@ const Schedule = () => {
 
       setModalOpen(false);
       fetchData();
+      fetchModulesHours();
     } catch (err) {
       const detail = err.response?.data?.detail;
       if (typeof detail === "object" && detail.errors) {
@@ -304,6 +346,7 @@ const Schedule = () => {
       setDeleteModalOpen(false);
       setModalOpen(false);
       fetchData();
+      fetchModulesHours();
     } catch (err) {
       setError(
         "Erro ao eliminar: " + (err.response?.data?.detail || err.message),
@@ -340,11 +383,28 @@ const Schedule = () => {
       );
       setAutoGenPreview(res.data);
       setAutoGenStep("done");
-      fetchData(); // Recarregar aulas no calendário
+      fetchData();
+      fetchModulesHours();
     } catch (err) {
       alert(err.response?.data?.detail || "Erro ao gerar horário.");
     } finally {
       setAutoGenLoading(false);
+    }
+  };
+
+  // ===== Apagar todas as aulas do curso =====
+  const handleDeleteAllLessons = async () => {
+    if (!selectedCourseFilter) return;
+    try {
+      setDeleteAllLoading(true);
+      await api.delete(`/lessons/by-course/${selectedCourseFilter}`);
+      setDeleteAllModalOpen(false);
+      fetchData();
+      fetchModulesHours();
+    } catch (err) {
+      alert(err.response?.data?.detail || "Erro ao apagar aulas.");
+    } finally {
+      setDeleteAllLoading(false);
     }
   };
 
@@ -454,14 +514,23 @@ const Schedule = () => {
             )}
           </div>
           {selectedCourseFilter && (
-            <button
-              onClick={handleAutoGenPreview}
-              disabled={autoGenLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm hover:shadow-md transition-all duration-200 font-medium text-sm disabled:opacity-50"
-            >
-              <Wand2 className="w-4 h-4" />
-              {autoGenLoading ? "A processar..." : "Auto-Gerar"}
-            </button>
+            <>
+              <button
+                onClick={handleAutoGenPreview}
+                disabled={autoGenLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm hover:shadow-md transition-all duration-200 font-medium text-sm disabled:opacity-50"
+              >
+                <Wand2 className="w-4 h-4" />
+                {autoGenLoading ? "A processar..." : "Auto-Gerar"}
+              </button>
+              <button
+                onClick={() => setDeleteAllModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm hover:shadow-md transition-all duration-200 font-medium text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Apagar Todas
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -512,6 +581,84 @@ const Schedule = () => {
         />
         </div>
       </div>
+
+      {/* Tabela de Horas dos Módulos */}
+      {selectedCourseFilter && (
+        <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">
+            Horas por Módulo — {selectedCourseName}
+          </h2>
+
+          {modulesHoursLoading ? (
+            <div className="flex items-center justify-center h-24">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : modulesHours.length === 0 ? (
+            <p className="text-gray-500 text-sm">
+              Este curso não tem módulos configurados.
+            </p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-left text-gray-600">
+                      <th className="px-4 py-3 font-semibold">#</th>
+                      <th className="px-4 py-3 font-semibold">Módulo</th>
+                      <th className="px-4 py-3 font-semibold">Professor</th>
+                      <th className="px-4 py-3 font-semibold text-center">Total (h)</th>
+                      <th className="px-4 py-3 font-semibold text-center">Agendado (h)</th>
+                      <th className="px-4 py-3 font-semibold text-center">Restante (h)</th>
+                      <th className="px-4 py-3 font-semibold w-40">Progresso</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {paginatedModulesHours.map((mod) => {
+                      const total = mod.total_hours || 0;
+                      const pct = total > 0 ? Math.min(100, Math.round((mod.scheduled_hours / total) * 100)) : 0;
+                      const barColor = pct >= 100 ? "bg-green-500" : pct >= 60 ? "bg-blue-500" : pct >= 30 ? "bg-yellow-500" : "bg-red-400";
+
+                      return (
+                        <tr key={mod.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-gray-500">{mod.order}</td>
+                          <td className="px-4 py-3 font-medium text-gray-800">{mod.module_name}</td>
+                          <td className="px-4 py-3 text-gray-600">{mod.trainer_name}</td>
+                          <td className="px-4 py-3 text-center">{mod.total_hours}</td>
+                          <td className="px-4 py-3 text-center">{mod.scheduled_hours}</td>
+                          <td className="px-4 py-3 text-center font-semibold">
+                            <span className={mod.remaining_hours === 0 ? "text-green-600" : mod.remaining_hours <= 6 ? "text-yellow-600" : "text-red-600"}>
+                              {mod.remaining_hours}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                                <div
+                                  className={`h-2.5 rounded-full ${barColor} transition-all`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-500 w-10 text-right">{pct}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                currentPage={modulesHoursPage}
+                totalPages={modulesHoursTotalPages}
+                totalItems={modulesHours.length}
+                itemsPerPage={MODULES_PER_PAGE}
+                onPageChange={setModulesHoursPage}
+              />
+            </>
+          )}
+        </div>
+      )}
 
       {/* Modal de Criar/Editar */}
       <Modal
@@ -969,6 +1116,41 @@ const Schedule = () => {
                       : `Confirmar (${autoGenPreview.lessons_created} aulas)`}
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
+      {/* Modal de Confirmação - Apagar Todas as Aulas */}
+      {deleteAllModalOpen && (
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Apagar Todas as Aulas
+              </h2>
+              <p className="text-gray-600 mb-2">
+                Tem a certeza que deseja apagar <strong>todas as aulas</strong> do curso:
+              </p>
+              <p className="font-semibold text-gray-800 mb-4">{selectedCourseName}</p>
+              <p className="text-red-600 text-sm font-medium mb-6">
+                Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setDeleteAllModalOpen(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteAllLessons}
+                  disabled={deleteAllLoading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                >
+                  {deleteAllLoading ? "A apagar..." : "Apagar Todas"}
+                </button>
               </div>
             </div>
           </div>
