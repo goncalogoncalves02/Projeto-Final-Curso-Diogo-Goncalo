@@ -158,19 +158,6 @@ const Sidebar = ({ isOpen, onClose }) => {
             </>
           )}
 
-          {(user?.role === "professor" ||
-            user?.is_superuser ||
-            user?.role === "admin") && (
-            <Link
-              to="/availability"
-              className={linkClass("/availability")}
-              onClick={handleLinkClick}
-            >
-              <Calendar className="w-5 h-5 mr-3 shrink-0" />
-              <span className="font-medium">Disponibilidade</span>
-            </Link>
-          )}
-
           {/* Link de Consultar Horários - Disponível para todos */}
           <Link
             to="/schedule"
@@ -184,6 +171,19 @@ const Sidebar = ({ isOpen, onClose }) => {
                 : "Consultar Horários"}
             </span>
           </Link>
+
+          {(user?.role === "professor" ||
+            user?.is_superuser ||
+            user?.role === "admin") && (
+            <Link
+              to="/availability"
+              className={linkClass("/availability")}
+              onClick={handleLinkClick}
+            >
+              <Calendar className="w-5 h-5 mr-3 shrink-0" />
+              <span className="font-medium">Disponibilidade</span>
+            </Link>
+          )}
 
           <Link
             to="/profile"
