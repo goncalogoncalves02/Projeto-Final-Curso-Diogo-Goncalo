@@ -75,8 +75,8 @@ const AdminModules = () => {
     if (!moduleToDelete) return;
     try {
       await api.delete(`/modules/${moduleToDelete.id}`);
-      setModules(modules.filter((m) => m.id !== moduleToDelete.id));
       setModuleToDelete(null);
+      fetchModules(currentPage, searchQuery);
     } catch {
       alert("Erro ao eliminar módulo.");
     }
@@ -85,10 +85,10 @@ const AdminModules = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/modules/", createFormData);
-      setModules([...modules, response.data]);
+      await api.post("/modules/", createFormData);
       setIsCreating(false);
       setCreateFormData(initialFormState);
+      fetchModules(currentPage, searchQuery);
     } catch (error) {
       alert(error.response?.data?.detail || "Erro ao criar módulo.");
     }
@@ -106,11 +106,9 @@ const AdminModules = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.put(`/modules/${editingModule.id}`, formData);
-      setModules(
-        modules.map((m) => (m.id === editingModule.id ? response.data : m)),
-      );
+      await api.put(`/modules/${editingModule.id}`, formData);
       setEditingModule(null);
+      fetchModules(currentPage, searchQuery);
     } catch {
       alert("Erro ao atualizar módulo.");
     }
