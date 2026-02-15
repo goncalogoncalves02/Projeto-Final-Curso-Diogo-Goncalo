@@ -238,6 +238,7 @@ const Schedule = () => {
       return {
         id: lesson.id,
         title: `${lesson.module_name} - ${lesson.trainer_name}`,
+        classroomName: lesson.classroom_name || null,
         start: startDate,
         end: endDate,
         resource: lesson,
@@ -408,6 +409,16 @@ const Schedule = () => {
     }
   };
 
+  // Componente customizado para renderizar eventos com sala em baixo
+  const CustomEvent = ({ event }) => (
+    <div className="leading-tight">
+      <div className="font-medium truncate">{event.title}</div>
+      {event.classroomName && (
+        <div className="text-[10px] opacity-80">({event.classroomName})</div>
+      )}
+    </div>
+  );
+
   // Estilos dos eventos (laranja = passada, azul = futura/a decorrer)
   const eventStyleGetter = (event) => {
     const now = new Date();
@@ -555,6 +566,7 @@ const Schedule = () => {
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}
           eventPropGetter={eventStyleGetter}
+          components={{ event: CustomEvent }}
           messages={messages}
           culture="pt"
           // Estados controlados para navegação funcionar
