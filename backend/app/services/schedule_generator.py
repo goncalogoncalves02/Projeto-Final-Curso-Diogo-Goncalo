@@ -354,82 +354,80 @@ def generate_schedule(
 
         # Só dias úteis (Seg-Sex)
         if iso_day <= 5:
-            # Para cada bloco do dia
+            # Módulos já agendados neste dia (limitar a 3h/dia por módulo)
+            used_today = set()
+
             for block_start, block_end in blocks:
                 # Verificar se a turma já tem aula neste bloco
                 if _is_course_block_occupied(
-                    db,
-                    course_id,
-                    current_date,
-                    block_start,
-                    block_end,
-                    generated_lessons,
+                    db, course_id, current_date, block_start, block_end, generated_lessons,
                 ):
                     continue
 
-                # Tentar agendar um módulo (por prioridade/order)
-                for mi in module_info:
-                    if mi["remaining_hours"] <= 0:
-                        continue
+                scheduled_this_block = False
 
-                    cm = mi["course_module"]
+                # Passagem 1: tentar módulo DIFERENTE dos já usados hoje
+                # Passagem 2 (fallback): permitir repetir módulo já usado
+                for allow_repeat in [False, True]:
+                    if scheduled_this_block:
+                        break
 
-                    # Verificar disponibilidade do professor
-                    if not _is_trainer_available(
-                        db, cm.trainer_id, current_date, block_start, block_end
-                    ):
-                        continue
+                    for mi in module_info:
+                        if mi["remaining_hours"] <= 0:
+                            continue
 
-                    # Verificar conflito de professor (noutro curso)
-                    if _has_trainer_conflict(
-                        db,
-                        cm.trainer_id,
-                        current_date,
-                        block_start,
-                        block_end,
-                        generated_lessons,
-                    ):
-                        continue
+                        cm = mi["course_module"]
 
-                    # Verificar sala
-                    classroom_id = cm.classroom_id
-                    if classroom_id and _has_classroom_conflict(
-                        db,
-                        classroom_id,
-                        current_date,
-                        block_start,
-                        block_end,
-                        generated_lessons,
-                    ):
-                        # Tentar sala alternativa
-                        alt = _find_alternative_classroom(
-                            db,
-                            current_date,
-                            block_start,
-                            block_end,
+                        # Na passagem 1, saltar módulos já usados hoje
+                        if not allow_repeat and cm.id in used_today:
+                            continue
+
+                        # Verificar disponibilidade do professor
+                        if not _is_trainer_available(
+                            db, cm.trainer_id, current_date, block_start, block_end
+                        ):
+                            continue
+
+                        # Verificar conflito de professor (noutro curso)
+                        if _has_trainer_conflict(
+                            db, cm.trainer_id, current_date, block_start, block_end,
                             generated_lessons,
-                            exclude_id=classroom_id,
-                        )
-                        if alt:
-                            classroom_id = alt
-                        else:
-                            continue  # Sem sala disponível
+                        ):
+                            continue
 
-                    # Gerar a aula!
-                    lesson_data = {
-                        "course_module_id": cm.id,
-                        "classroom_id": classroom_id,
-                        "date": current_date,
-                        "start_time": block_start,
-                        "end_time": block_end,
-                        "trainer_id": cm.trainer_id,
-                        "course_id": course_id,
-                        "module_name": mi["module_name"],
-                    }
-                    generated_lessons.append(lesson_data)
-                    mi["remaining_hours"] -= BLOCK_DURATION_HOURS
-                    mi["lessons_created"] += 1
-                    break  # Bloco ocupado, passar ao próximo bloco
+                        # Verificar sala
+                        classroom_id = cm.classroom_id
+                        if classroom_id and _has_classroom_conflict(
+                            db, classroom_id, current_date, block_start, block_end,
+                            generated_lessons,
+                        ):
+                            # Tentar sala alternativa
+                            alt = _find_alternative_classroom(
+                                db, current_date, block_start, block_end,
+                                generated_lessons, exclude_id=classroom_id,
+                            )
+                            if alt:
+                                classroom_id = alt
+                            else:
+                                continue  # Sem sala disponível
+
+                        # Gerar a aula!
+                        lesson_data = {
+                            "course_module_id": cm.id,
+                            "classroom_id": classroom_id,
+                            "date": current_date,
+                            "start_time": block_start,
+                            "end_time": block_end,
+                            "trainer_id": cm.trainer_id,
+                            "course_id": course_id,
+                            "module_name": mi["module_name"],
+                        }
+                        generated_lessons.append(lesson_data)
+                        mi["remaining_hours"] -= BLOCK_DURATION_HOURS
+                        mi["lessons_created"] += 1
+                        used_today.add(cm.id)
+                        scheduled_this_block = True
+                        break  # Bloco ocupado, passar ao próximo
 
         current_date += timedelta(days=1)
 
