@@ -45,3 +45,39 @@ guide.md
 PROJECT_STATUS.md
 backend/uploads/users
 backend/scripts/seed_data.sql
+backend/uploads/avatars
+
+
+# ========================
+# Android / Mobile
+# ========================
+
+# Build outputs
+mobile/app/build/
+mobile/build/
+mobile/.gradle/
+
+# Local configuration (SDK paths, etc.)
+mobile/local.properties
+
+# Gradle cache
+mobile/gradle/wrapper/gradle-wrapper.jar
+mobile/.gradle/
+
+# APKs and bundles
+*.apk
+*.aab
+*.ap_
+
+# Generated files
+mobile/app/src/main/java/com/atec/gestao/BuildConfig.java
+mobile/captures/
+
+# Signing keys (NUNCA fazer commit!)
+*.jks
+*.keystore
+
+# Misc Android
+mobile/.cxx/
+mobile/.externalNativeBuild/
+>>>>>>> Stashed changes
