@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Strings da aplicação em Português (PT) -->
+<resources>
+    <string name="app_name">ATEC Gestão</string>
+
+    <!-- Login -->
+    <string name="login_title">Bem-vindo</string>
+    <string name="login_subtitle">Sistema de Gestão Escolar ATEC</string>
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Password</string>
+    <string name="btn_login">Entrar</string>
+    <string name="error_empty_email">Insira o email</string>
+    <string name="error_empty_password">Insira a password</string>
+    <string name="error_invalid_email">Email inválido</string>
+    <string name="error_login_failed">Login falhou. Verifique as credenciais.</string>
+    <string name="error_network">Erro de rede. Verifique a ligação.</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">Painel Principal</string>
+    <string name="card_courses">Cursos</string>
+    <string name="card_students">Formandos</string>
+    <string name="card_trainers">Formadores</string>
+    <string name="card_classrooms">Salas</string>
+    <string name="card_courses_desc">Consultar cursos</string>
+    <string name="card_students_desc">Pesquisar formandos</string>
+    <string name="card_trainers_desc">Pesquisar formadores</string>
+    <string name="card_classrooms_desc">Ver disponibilidade</string>
+    <string name="btn_logout">Terminar Sessão</string>
+    <string name="btn_profile">Perfil</string>
+    <string name="dialog_logout_title">Terminar Sessão</string>
+    <string name="dialog_logout_message">Tem a certeza que pretende sair?</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_confirm">Confirmar</string>
+
+    <!-- Cursos -->
+    <string name="courses_title">Cursos</string>
+    <string name="search_courses_hint">Pesquisar cursos…</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_active">A Decorrer</string>
+    <string name="filter_planned">Planeado</string>
+    <string name="filter_finished">Terminado</string>
+    <string name="course_detail_title">Detalhes do Curso</string>
+    <string name="label_area">Área</string>
+    <string name="label_status">Estado</string>
+    <string name="label_start_date">Data de Início</string>
+    <string name="label_end_date">Data de Fim</string>
+    <string name="label_description">Descrição</string>
+    <string name="label_modules">Módulos</string>
+    <string name="no_modules">Nenhum módulo associado</string>
+
+    <!-- Formandos -->
+    <string name="students_title">Formandos</string>
+    <string name="search_students_hint">Pesquisar formandos…</string>
+    <string name="student_detail_title">Perfil do Formando</string>
+
+    <!-- Formadores -->
+    <string name="trainers_title">Formadores</string>
+    <string name="search_trainers_hint">Pesquisar formadores…</string>
+    <string name="trainer_detail_title">Perfil do Formador</string>
+    <string name="label_schedule">Horário</string>
+    <string name="no_lessons">Sem aulas agendadas</string>
+
+    <!-- Salas -->
+    <string name="classrooms_title">Salas</string>
+    <string name="search_classrooms_hint">Pesquisar salas…</string>
+    <string name="classroom_schedule_title">Ocupação da Sala</string>
+    <string name="btn_select_date">Selecionar Data</string>
+    <string name="label_capacity">Capacidade</string>
+    <string name="label_type">Tipo</string>
+    <string name="room_available">Disponível</string>
+    <string name="room_unavailable">Indisponível</string>
+    <string name="no_lessons_for_date">Sem aulas para esta data</string>
+
+    <!-- Perfil -->
+    <string name="profile_title">Meu Perfil</string>
+    <string name="btn_change_photo">Alterar Foto</string>
+    <string name="label_name">Nome</string>
+    <string name="label_email">Email</string>
+    <string name="label_role">Função</string>
+    <string name="photo_updated">Foto atualizada com sucesso</string>
+
+    <!-- Genéricos -->
+    <string name="loading">A carregar…</string>
+    <string name="error_generic">Ocorreu um erro</string>
+    <string name="empty_list">Sem resultados</string>
+    <string name="btn_retry">Tentar Novamente</string>
+</resources>
