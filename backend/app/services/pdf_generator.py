@@ -5,12 +5,14 @@ Gera fichas PDF de estudantes e professores usando fpdf2.
 """
 
 import os
+from datetime import datetime
 from fpdf import FPDF
 from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.models.enrollment import Enrollment
 from app.models.course_module import CourseModule
+from app.crud import lesson as lesson_crud
 
 # Directorio base do backend (para resolver caminhos de ficheiros)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -57,6 +59,21 @@ def _truncate(text, max_len=40):
     if len(text) > max_len:
         return text[:max_len - 3] + "..."
     return text
+
+
+def _calculate_taught_hours(db: Session, course_module_id: int) -> float:
+    """Calcula o total de horas já lecionadas (aulas passadas) para um módulo."""
+    from datetime import date as date_type
+    today = date_type.today()
+    lessons = lesson_crud.get_by_course_module(db, course_module_id=course_module_id)
+    total = 0.0
+    for lesson in lessons:
+        if lesson.date > today:
+            continue
+        start_dt = datetime.combine(lesson.date, lesson.start_time)
+        end_dt = datetime.combine(lesson.date, lesson.end_time)
+        total += (end_dt - start_dt).total_seconds() / 3600
+    return round(total, 1)
 
 
 class ATECReport(FPDF):
@@ -164,13 +181,22 @@ def generate_student_pdf(db: Session, user: User) -> bytes:
 
         pdf.set_font("Helvetica", "", 9)
         estado = _translate_status(enrollment.status)
-        nota_final = str(enrollment.final_grade) if enrollment.final_grade is not None else "-"
+
+        # Nota final: usa final_grade manual se existir, senão calcula média das notas
+        grades = enrollment.module_grades
+        if enrollment.final_grade is not None:
+            nota_final = str(enrollment.final_grade)
+        elif grades:
+            valid_grades = [g.grade for g in grades if g.grade is not None]
+            nota_final = f"{sum(valid_grades) / len(valid_grades):.1f}" if valid_grades else "-"
+        else:
+            nota_final = "-"
+
         pdf.cell(0, 6, f"  Estado: {estado}  |  Nota Final: {nota_final}  |  Area: {course.area or '-'}", new_x="LMARGIN", new_y="NEXT")
         pdf.cell(0, 6, f"  Periodo: {_format_date(course.start_date)} a {_format_date(course.end_date)}", new_x="LMARGIN", new_y="NEXT")
         pdf.ln(2)
 
         # Tabela de notas por modulo
-        grades = enrollment.module_grades
 
         if grades:
             # Cabecalho da tabela
@@ -280,11 +306,14 @@ def generate_professor_pdf(db: Session, user: User) -> bytes:
     pdf.set_font("Helvetica", "", 9)
 
     total_hours = 0
+    total_scheduled = 0
     fill = False
     for cm in course_modules:
         course_name = _truncate(cm.course.name, 32)
         module_name = _truncate(cm.module.name, 28)
-        hours = str(cm.total_hours or 0)
+        cm_total = cm.total_hours or 0
+        scheduled = _calculate_taught_hours(db, cm.id)
+        hours = f"{scheduled:.0f}/{cm_total:.0f}"
         status = _translate_status(cm.course.status)
 
         if fill:
@@ -298,13 +327,14 @@ def generate_professor_pdf(db: Session, user: User) -> bytes:
         pdf.cell(col_widths[3], 6, f" {status}", border=1, fill=True)
         pdf.ln()
         fill = not fill
-        total_hours += cm.total_hours or 0
+        total_hours += cm_total
+        total_scheduled += scheduled
 
     # Linha de total
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_fill_color(230, 240, 250)
     pdf.cell(col_widths[0] + col_widths[1], 6, " Total", border=1, fill=True)
-    pdf.cell(col_widths[2], 6, str(total_hours), border=1, align="C", fill=True)
+    pdf.cell(col_widths[2], 6, f"{total_scheduled:.0f}/{total_hours:.0f}", border=1, align="C", fill=True)
     pdf.cell(col_widths[3], 6, f" {len(course_modules)} modulo(s)", border=1, fill=True)
     pdf.ln()
 
