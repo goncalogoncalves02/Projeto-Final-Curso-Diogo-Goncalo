@@ -8,6 +8,8 @@ const Availability = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [slotToDelete, setSlotToDelete] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -32,13 +34,21 @@ const Availability = () => {
   const fetchAvailabilities = async () => {
     try {
       const response = await api.get("/availability/?my_only=true");
+      // Calcula dia da semana efetivo (para pontuais, extrai da data)
+      // JS getDay(): 0=Domingo → converter para 1=Domingo do nosso sistema (+1)
+      const getDayKey = (slot) => {
+        if (slot.is_recurring) return slot.day_of_week;
+        if (slot.specific_date) return new Date(slot.specific_date).getDay() + 1;
+        return 99;
+      };
       const sorted = response.data.sort((a, b) => {
-        // Sort rationale: Date first (asc), then Day of Week (asc)
-        if (a.specific_date && b.specific_date)
-          return new Date(a.specific_date) - new Date(b.specific_date);
-        if (a.is_recurring && !b.is_recurring) return 1;
-        if (!a.is_recurring && b.is_recurring) return -1;
-        return a.day_of_week - b.day_of_week;
+        const dayA = getDayKey(a);
+        const dayB = getDayKey(b);
+        if (dayA !== dayB) return dayA - dayB;
+        // Mesmo dia: recorrentes primeiro
+        if (a.is_recurring !== b.is_recurring) return a.is_recurring ? -1 : 1;
+        // Mesmo tipo: ordenar por hora de início
+        return a.start_time.localeCompare(b.start_time);
       });
       setAvailabilities(sorted);
       setLoading(false);
@@ -72,25 +82,26 @@ const Availability = () => {
         payload.specific_date = formData.specific_date;
       }
 
-      const response = await api.post("/availability/", payload);
-      // Re-fetch to simpler sort logic or manual append
+      await api.post("/availability/", payload);
       fetchAvailabilities();
       setIsCreating(false);
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao criar disponibilidade. Valida os dados.");
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.detail || "Erro ao criar disponibilidade. Valida os dados.";
+      setFormError(msg);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Tem a certeza que quer remover esta disponibilidade?"))
-      return;
+  const confirmDelete = async () => {
+    if (!slotToDelete) return;
     try {
-      await api.delete(`/availability/${id}`);
-      setAvailabilities(availabilities.filter((a) => a.id !== id));
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao eliminar.");
+      await api.delete(`/availability/${slotToDelete.id}`);
+      setSlotToDelete(null);
+      fetchAvailabilities();
+    } catch (err) {
+      console.error(err);
+      setSlotToDelete(null);
+      setError("Erro ao eliminar disponibilidade.");
     }
   };
 
@@ -112,7 +123,7 @@ const Availability = () => {
           </p>
         </div>
         <button
-          onClick={() => setIsCreating(true)}
+          onClick={() => { setFormError(""); setIsCreating(true); }}
           className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-200 font-medium text-sm"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -173,7 +184,7 @@ const Availability = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => handleDelete(slot.id)}
+                      onClick={() => setSlotToDelete(slot)}
                       className="text-red-600 hover:text-red-900"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -185,6 +196,49 @@ const Availability = () => {
           </table>
         )}
       </div>
+
+      {/* Modal de Confirmação de Eliminação */}
+      {slotToDelete && (
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+                  <Trash2 className="h-6 w-6 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Eliminar Disponibilidade
+                </h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  Tens a certeza que queres eliminar a disponibilidade de{" "}
+                  <span className="font-bold text-gray-800">
+                    {slotToDelete.is_recurring
+                      ? getDayName(slotToDelete.day_of_week)
+                      : new Date(slotToDelete.specific_date).toLocaleDateString("pt-PT")}
+                  </span>{" "}
+                  ({slotToDelete.start_time.slice(0, 5)} - {slotToDelete.end_time.slice(0, 5)})?
+                  <br />
+                  Esta ação é irreversível.
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => setSlotToDelete(null)}
+                    className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium text-sm shadow-sm"
+                  >
+                    Sim, Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
 
       {isCreating && (
         <ModalPortal>
@@ -353,6 +407,12 @@ const Availability = () => {
                     </div>
                   </div>
                 </div>
+
+                {formError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+                    {formError}
+                  </div>
+                )}
 
                 <div className="flex justify-end space-x-3">
                   <button
