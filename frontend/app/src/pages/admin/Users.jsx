@@ -369,7 +369,6 @@ const AdminUsers = () => {
                   >
                     <option value="estudante">Estudante</option>
                     <option value="professor">Professor</option>
-                    <option value="secretaria">Secretaria</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
