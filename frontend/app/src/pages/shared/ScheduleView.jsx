@@ -298,16 +298,18 @@ const ScheduleView = () => {
   const getSelectOptions = () => {
     switch (viewMode) {
       case "course":
-        return courses.map((c) => ({ id: c.id, name: c.name }));
+        return courses.map((c) => ({ id: c.id, name: c.name, subtitle: c.area }));
       case "trainer":
         return trainers.map((t) => ({
           id: t.id,
           name: t.full_name || t.email,
+          subtitle: t.email,
         }));
       case "classroom":
         return classrooms.map((c) => ({
           id: c.id,
           name: `${c.name} (${c.type})`,
+          subtitle: `Capacidade: ${c.capacity}`,
         }));
       default:
         return [];
@@ -557,7 +559,8 @@ const ScheduleView = () => {
                     {getSelectOptions().filter(
                       (o) =>
                         !selectSearch.trim() ||
-                        o.name.toLowerCase().includes(selectSearch.toLowerCase())
+                        o.name.toLowerCase().includes(selectSearch.toLowerCase()) ||
+                        o.subtitle?.toLowerCase().includes(selectSearch.toLowerCase())
                     ).length === 0 ? (
                       <div className="px-3 py-2 text-sm text-gray-400">
                         Nenhum resultado encontrado
@@ -584,7 +587,8 @@ const ScheduleView = () => {
                                 : "text-gray-700"
                             }`}
                           >
-                            {o.name}
+                            <div className="font-medium">{o.name}</div>
+                            {o.subtitle && <div className="text-xs text-gray-400">{o.subtitle}</div>}
                           </button>
                         ))
                     )}
@@ -712,7 +716,7 @@ const ScheduleView = () => {
             step={30}
             timeslots={2}
             min={new Date(2020, 0, 1, 7, 0)} // 07:00
-            max={new Date(2020, 0, 1, 23, 0)} // 23:00
+            max={new Date(2020, 0, 1, 23, 59)} // 23:00
             style={{ height: "calc(100% - 60px)" }}
             popup
           />

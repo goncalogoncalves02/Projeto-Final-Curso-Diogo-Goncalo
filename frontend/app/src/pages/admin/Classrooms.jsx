@@ -76,8 +76,8 @@ const AdminClassrooms = () => {
     if (!classroomToDelete) return;
     try {
       await api.delete(`/classrooms/${classroomToDelete.id}`);
-      setClassrooms(classrooms.filter((c) => c.id !== classroomToDelete.id));
       setClassroomToDelete(null);
+      fetchClassrooms(currentPage, searchQuery);
     } catch {
       alert("Erro ao eliminar sala.");
     }
@@ -86,10 +86,10 @@ const AdminClassrooms = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/classrooms/", createFormData);
-      setClassrooms([...classrooms, response.data]);
+      await api.post("/classrooms/", createFormData);
       setIsCreating(false);
       setCreateFormData(initialFormState);
+      fetchClassrooms(currentPage, searchQuery);
     } catch (error) {
       alert(error.response?.data?.detail || "Erro ao criar sala.");
     }
@@ -108,16 +108,9 @@ const AdminClassrooms = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.put(
-        `/classrooms/${editingClassroom.id}`,
-        formData,
-      );
-      setClassrooms(
-        classrooms.map((c) =>
-          c.id === editingClassroom.id ? response.data : c,
-        ),
-      );
+      await api.put(`/classrooms/${editingClassroom.id}`, formData);
       setEditingClassroom(null);
+      fetchClassrooms(currentPage, searchQuery);
     } catch {
       alert("Erro ao atualizar sala.");
     }

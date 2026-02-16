@@ -12,8 +12,8 @@ const Availability = () => {
   // Form State
   const [formData, setFormData] = useState({
     day_of_week: 2, // Default: Segunda
-    start_time: "09:00",
-    end_time: "13:00",
+    start_time: "08:00",
+    end_time: "15:00",
     is_recurring: true,
     specific_date: "",
   });
@@ -48,6 +48,8 @@ const Availability = () => {
       setLoading(false);
     }
   };
+
+  
 
   useEffect(() => {
     fetchAvailabilities();
