@@ -32,6 +32,7 @@ class EnrollmentUpdate(BaseModel):
 class Enrollment(EnrollmentBase):
     id: int
     user: Optional[User] = None  # Include user details in response
+    course: Optional[Course] = None  # Include course details in response
 
     class Config:
         from_attributes = True

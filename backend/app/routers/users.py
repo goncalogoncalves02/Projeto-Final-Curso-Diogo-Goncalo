@@ -1,12 +1,21 @@
 from typing import List, Optional, Any
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 import math
+import os
+import uuid
 from app.api import deps
 from app.crud import user as user_crud
 from app.schemas import user as user_schema
 from app.models.user import User
+
+UPLOAD_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "avatars"
+)
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5MB
 
 router = APIRouter(
     prefix="/users",
@@ -18,6 +27,9 @@ router = APIRouter(
 @router.get("/")
 def read_users(
     q: Optional[str] = Query(None, min_length=2, description="Termo de pesquisa"),
+    role: Optional[str] = Query(
+        None, description="Filtrar por role (admin, professor, estudante, secretaria)"
+    ),
     page: int = Query(1, ge=1, description="Página atual"),
     limit: int = Query(20, ge=1, le=100, description="Items por página"),
     db: Session = Depends(deps.get_db),
@@ -27,6 +39,10 @@ def read_users(
     Lista todos os utilizadores com paginação (Apenas Admin).
     """
     query = db.query(User)
+
+    # Aplicar filtro de role se fornecido
+    if role:
+        query = query.filter(User.role == role)
 
     # Aplicar filtro de pesquisa se fornecido
     if q:
@@ -90,6 +106,59 @@ def update_user_me(
 
     user = user_crud.update_user(db, db_user=current_user, user_in=user_in)
     return user
+
+
+@router.post("/me/avatar", response_model=user_schema.User)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Upload de foto de perfil do utilizador autenticado.
+    """
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Tipo de ficheiro não permitido. Use JPEG, PNG, GIF ou WebP.",
+        )
+
+    contents = await file.read()
+    if len(contents) > MAX_AVATAR_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="Ficheiro demasiado grande. Máximo 5MB.",
+        )
+
+    # Criar pasta do utilizador
+    user_folder = os.path.join(UPLOAD_DIR, str(current_user.id))
+    os.makedirs(user_folder, exist_ok=True)
+
+    # Apagar avatar anterior se existir
+    if current_user.avatar_url:
+        old_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            current_user.avatar_url.lstrip("/"),
+        )
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    # Guardar novo avatar com nome UUID
+    file_ext = os.path.splitext(file.filename)[1] or ".jpg"
+    unique_filename = f"{uuid.uuid4().hex}{file_ext}"
+    file_path = os.path.join(user_folder, unique_filename)
+
+    with open(file_path, "wb") as buffer:
+        buffer.write(contents)
+
+    # Atualizar avatar_url na BD
+    avatar_url = f"uploads/avatars/{current_user.id}/{unique_filename}"
+    current_user.avatar_url = avatar_url
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user
 
 
 @router.get("/{user_id}", response_model=user_schema.User)

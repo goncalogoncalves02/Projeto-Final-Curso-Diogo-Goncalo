@@ -6,7 +6,7 @@ CRUD completo para gestão de aulas com validações críticas:
 2. Não alocar professor em 2 aulas ao mesmo tempo
 3. Não ultrapassar horas do módulo
 
-Também inclui endpoints de consulta por turma, formador e sala.
+Também inclui endpoints de consulta por turma, professor e sala.
 """
 
 from typing import List, Any, Optional
@@ -404,6 +404,27 @@ def update_lesson(
     return lesson_crud.update(db, db_obj=lesson, obj_in=lesson_in)
 
 
+@router.delete("/by-course/{course_id}")
+def delete_lessons_by_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(deps.get_current_active_superuser),
+):
+    """Remove todas as aulas de um curso."""
+    course_modules = course_module_crud.get_by_course(db, course_id=course_id)
+    if not course_modules:
+        return {"deleted": 0}
+
+    module_ids = [cm.id for cm in course_modules]
+    lessons = lesson_crud.get_by_course_module_ids(db, course_module_ids=module_ids)
+    count = len(lessons)
+
+    for lesson in lessons:
+        lesson_crud.remove(db, id=lesson.id)
+
+    return {"deleted": count}
+
+
 @router.delete("/{lesson_id}", response_model=Lesson)
 def delete_lesson(
     lesson_id: int,
@@ -522,8 +543,8 @@ def get_lessons_by_trainer(
     end_date: Optional[date] = Query(None, description="Filtrar até esta data"),
 ):
     """
-    Lista o horário de um professor/formador.
-    Requisito 1.l: Consulta rápida de horário de formador com filtro por tempo.
+    Lista o horário de um professor.
+    Requisito 1.l: Consulta rápida de horário de professor com filtro por tempo.
     """
     # Obter todos os módulos deste professor
     course_modules = course_module_crud.get_multi(db, limit=1000)
