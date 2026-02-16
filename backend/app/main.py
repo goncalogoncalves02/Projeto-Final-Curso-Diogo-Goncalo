@@ -24,6 +24,8 @@ from app.routers import (
     lessons,
     search,
     chatbot,
+    exports,
+    schedule_generator,
 )
 
 from fastapi.staticfiles import StaticFiles
@@ -137,6 +139,10 @@ app.include_router(user_files.router, prefix="/users", tags=["user_files"])
 app.include_router(lessons.router, prefix="/lessons", tags=["lessons"])
 app.include_router(search.router, prefix="/search", tags=["search"])
 app.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
+app.include_router(exports.router, prefix="/exports", tags=["exports"])
+app.include_router(
+    schedule_generator.router, prefix="/schedule-generator", tags=["schedule-generator"]
+)
 
 # Montar pasta de uploads como estática (backend/uploads/)
 uploads_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")

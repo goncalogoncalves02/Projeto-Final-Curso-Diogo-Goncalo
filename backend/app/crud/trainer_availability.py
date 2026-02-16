@@ -24,10 +24,16 @@ class CRUDTrainerAvailability(CRUDBase[TrainerAvailability, TrainerAvailabilityC
     ) -> List[TrainerAvailability]:
         """
         Lista disponibilidades de um professor específico.
+        Ordenadas por dia da semana, recorrentes primeiro, depois por hora de início.
         """
         return (
             db.query(self.model)
             .filter(self.model.trainer_id == trainer_id)
+            .order_by(
+                self.model.day_of_week.asc().nullslast(),
+                self.model.is_recurring.desc(),
+                self.model.start_time.asc(),
+            )
             .offset(skip)
             .limit(limit)
             .all()

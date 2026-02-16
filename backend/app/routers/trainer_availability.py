@@ -46,6 +46,11 @@ def read_availabilities(
     )
 
 
+def _time_overlaps(s1, e1, s2, e2) -> bool:
+    """Verifica se dois intervalos de tempo se sobrepõem."""
+    return s1 < e2 and s2 < e1
+
+
 @router.post("/", response_model=TrainerAvailability)
 def create_availability(
     availability_in: TrainerAvailabilityCreate,
@@ -54,7 +59,27 @@ def create_availability(
 ):
     """
     Cria uma nova disponibilidade para o utilizador atual.
+    Valida sobreposição com disponibilidades existentes.
     """
+    if availability_in.is_recurring:
+        existing = availability_crud.get_by_day_of_week(
+            db, trainer_id=current_user.id, day_of_week=availability_in.day_of_week
+        )
+    else:
+        existing = availability_crud.get_by_specific_date(
+            db, trainer_id=current_user.id, specific_date=availability_in.specific_date
+        )
+
+    for slot in existing:
+        if _time_overlaps(
+            availability_in.start_time, availability_in.end_time,
+            slot.start_time, slot.end_time,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Já existe uma disponibilidade que se sobrepõe neste horário.",
+            )
+
     return availability_crud.create_for_trainer(
         db, trainer_id=current_user.id, obj_in=availability_in
     )

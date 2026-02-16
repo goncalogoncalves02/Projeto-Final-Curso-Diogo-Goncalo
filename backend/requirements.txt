@@ -35,3 +35,6 @@ pydantic
 
 # ChatBot OpenAI
 openai
+
+# Geração de PDF
+fpdf2

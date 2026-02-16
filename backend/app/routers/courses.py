@@ -1,4 +1,5 @@
 from typing import List, Optional, Any
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -9,10 +10,12 @@ from app.schemas.course_module import (
     CourseModule,
     CourseModuleCreate,
     CourseModuleUpdate,
+    CourseModuleHoursInfo,
 )
 from app.api import deps
 from app.crud import course as course_crud
 from app.crud import course_module as course_module_crud
+from app.crud import lesson as lesson_crud
 from app.models.course import Course as CourseModel
 
 router = APIRouter()
@@ -126,6 +129,46 @@ def read_course_modules(
         raise HTTPException(status_code=404, detail="Course not found")
 
     return course_module_crud.get_by_course(db, course_id=course_id)
+
+
+@router.get("/{course_id}/modules-hours", response_model=List[CourseModuleHoursInfo])
+def read_course_modules_hours(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(deps.get_current_active_user),
+):
+    """
+    Lista módulos de um curso com horas agendadas e restantes.
+    """
+    course = course_crud.get(db, id=course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    modules = course_module_crud.get_by_course(db, course_id=course_id)
+    result = []
+
+    for cm in modules:
+        lessons = lesson_crud.get_by_course_module(db, course_module_id=cm.id)
+        scheduled = 0.0
+        for lesson in lessons:
+            start_dt = datetime.combine(datetime.today(), lesson.start_time)
+            end_dt = datetime.combine(datetime.today(), lesson.end_time)
+            scheduled += (end_dt - start_dt).total_seconds() / 3600
+        scheduled = round(scheduled, 2)
+        total = cm.total_hours or 0
+        remaining = round(max(0, total - scheduled), 2)
+
+        result.append(CourseModuleHoursInfo(
+            id=cm.id,
+            order=cm.order,
+            module_name=cm.module.name if cm.module else f"Módulo {cm.module_id}",
+            trainer_name=cm.trainer.full_name if cm.trainer else "Sem professor",
+            total_hours=total,
+            scheduled_hours=scheduled,
+            remaining_hours=remaining,
+        ))
+
+    return result
 
 
 @router.post("/{course_id}/modules", response_model=CourseModule)
