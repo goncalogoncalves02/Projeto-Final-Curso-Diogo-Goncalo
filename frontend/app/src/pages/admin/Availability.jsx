@@ -70,12 +70,17 @@ const AdminAvailability = () => {
     setLoading(true);
     try {
       const response = await api.get(`/availability/?trainer_id=${userId}`);
+      const getDayKey = (slot) => {
+        if (slot.is_recurring) return slot.day_of_week;
+        if (slot.specific_date) return new Date(slot.specific_date).getDay() + 1;
+        return 99;
+      };
       const sorted = response.data.sort((a, b) => {
-        if (a.specific_date && b.specific_date)
-          return new Date(a.specific_date) - new Date(b.specific_date);
-        if (a.is_recurring && !b.is_recurring) return 1;
-        if (!a.is_recurring && b.is_recurring) return -1;
-        return a.day_of_week - b.day_of_week;
+        const dayA = getDayKey(a);
+        const dayB = getDayKey(b);
+        if (dayA !== dayB) return dayA - dayB;
+        if (a.is_recurring !== b.is_recurring) return a.is_recurring ? -1 : 1;
+        return a.start_time.localeCompare(b.start_time);
       });
       setAvailabilities(sorted);
     } catch (error) {
