@@ -41,7 +41,7 @@ class StudentDetailActivity : AppCompatActivity() {
         binding.tvUserEmail.text = userEmail
 
         // Configurar chip de role com cor verde para estudantes
-        binding.chipRole.text = "Formando"
+        binding.chipRole.text = "Estudante"
         binding.chipRole.setChipBackgroundColorResource(R.color.card_students)
         binding.chipRole.setTextColor(ContextCompat.getColor(this, R.color.white))
 

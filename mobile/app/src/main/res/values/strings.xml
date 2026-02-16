@@ -18,12 +18,12 @@
     <!-- Dashboard -->
     <string name="dashboard_title">Painel Principal</string>
     <string name="card_courses">Cursos</string>
-    <string name="card_students">Formandos</string>
-    <string name="card_trainers">Formadores</string>
+    <string name="card_students">Estudantes</string>
+    <string name="card_trainers">Professores</string>
     <string name="card_classrooms">Salas</string>
     <string name="card_courses_desc">Consultar cursos</string>
-    <string name="card_students_desc">Pesquisar formandos</string>
-    <string name="card_trainers_desc">Pesquisar formadores</string>
+    <string name="card_students_desc">Pesquisar estudantes</string>
+    <string name="card_trainers_desc">Pesquisar professores</string>
     <string name="card_classrooms_desc">Ver disponibilidade</string>
     <string name="btn_logout">Terminar Sessão</string>
     <string name="btn_profile">Perfil</string>
@@ -48,15 +48,15 @@
     <string name="label_modules">Módulos</string>
     <string name="no_modules">Nenhum módulo associado</string>
 
-    <!-- Formandos -->
-    <string name="students_title">Formandos</string>
-    <string name="search_students_hint">Pesquisar formandos…</string>
-    <string name="student_detail_title">Perfil do Formando</string>
+    <!-- Estudantes -->
+    <string name="students_title">Estudantes</string>
+    <string name="search_students_hint">Pesquisar estudantes…</string>
+    <string name="student_detail_title">Perfil do Estudante</string>
 
-    <!-- Formadores -->
-    <string name="trainers_title">Formadores</string>
-    <string name="search_trainers_hint">Pesquisar formadores…</string>
-    <string name="trainer_detail_title">Perfil do Formador</string>
+    <!-- Professores -->
+    <string name="trainers_title">Professores</string>
+    <string name="search_trainers_hint">Pesquisar professores…</string>
+    <string name="trainer_detail_title">Perfil do Professor</string>
     <string name="label_schedule">Horário</string>
     <string name="no_lessons">Sem aulas agendadas</string>
 
