@@ -302,7 +302,7 @@ class ModuleAdapter : RecyclerView.Adapter<ModuleAdapter.ViewHolder>() {
             // Nome do formador
             binding.tvTrainerName.text = courseModule.trainer?.fullName
                 ?: courseModule.trainer?.email
-                ?: "Sem formador"
+                ?: "Sem professor"
 
             // Horas totais
             binding.tvHours.text = "${courseModule.totalHours ?: 0}h"

@@ -7,7 +7,7 @@
  *
  * Funcionalidades:
  * - Mostra nome e role do utilizador (lidos do DataStore)
- * - 4 cards: Cursos, Formandos, Formadores, Salas
+ * - 4 cards: Cursos, Estudantes, Professores, Salas
  * - Botão de perfil (navega para ProfileActivity)
  * - Botão de logout com dialog de confirmação
  *
@@ -73,8 +73,8 @@ class MainActivity : AppCompatActivity() {
             binding.tvUserRole.text = when (role) {
                 "admin" -> "Administrador"
                 "secretaria" -> "Secretaria"
-                "professor" -> "Formador"
-                "estudante" -> "Formando"
+                "professor" -> "Professor"
+                "estudante" -> "Estudante"
                 else -> role
             }
 
@@ -104,12 +104,12 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, CoursesActivity::class.java))
         }
 
-        // Card Formandos → StudentsActivity
+        // Card Estudantes → StudentsActivity
         binding.cardStudents.setOnClickListener {
             startActivity(Intent(this, StudentsActivity::class.java))
         }
 
-        // Card Formadores → TrainersActivity
+        // Card Professores → TrainersActivity
         binding.cardTrainers.setOnClickListener {
             startActivity(Intent(this, TrainersActivity::class.java))
         }

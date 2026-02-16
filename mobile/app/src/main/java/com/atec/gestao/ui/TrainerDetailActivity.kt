@@ -50,7 +50,7 @@ class TrainerDetailActivity : AppCompatActivity() {
         binding.tvUserEmail.text = userEmail
 
         // Chip de role com cor laranja para formadores
-        binding.chipRole.text = "Formador"
+        binding.chipRole.text = "Professor"
         binding.chipRole.setChipBackgroundColorResource(R.color.card_trainers)
         binding.chipRole.setTextColor(ContextCompat.getColor(this, R.color.white))
 

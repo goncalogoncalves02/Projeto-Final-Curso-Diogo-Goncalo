@@ -97,8 +97,8 @@ class ProfileActivity : AppCompatActivity() {
             binding.etRole.setText(when (role) {
                 "admin" -> "Administrador"
                 "secretaria" -> "Secretaria"
-                "professor" -> "Formador"
-                "estudante" -> "Formando"
+                "professor" -> "Professor"
+                "estudante" -> "Estudante"
                 else -> role
             })
 
