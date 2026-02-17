@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import api from "../api/axios";
 import { createPortal } from "react-dom";
 import { FileText, Upload, Trash2, Download, X } from "lucide-react";
+import ModalPortal from "./ui/ModalPortal";
 
 const UserFilesModal = ({ userId, userName, onClose }) => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [fileToDelete, setFileToDelete] = useState(null);
 
   const fetchFiles = useCallback(async () => {
     try {
@@ -66,15 +68,16 @@ const UserFilesModal = ({ userId, userName, onClose }) => {
     }
   };
 
-  const handleDelete = async (fileId) => {
-    if (!confirm("Tem certeza que deseja eliminar este ficheiro?")) return;
-
+  const confirmDelete = async () => {
+    if (!fileToDelete) return;
     try {
-      await api.delete(`/users/${userId}/files/${fileId}`);
-      setFiles(files.filter((f) => f.id !== fileId));
+      await api.delete(`/users/${userId}/files/${fileToDelete.id}`);
+      setFileToDelete(null);
+      fetchFiles();
     } catch (err) {
       console.error(err);
       setError("Erro ao eliminar ficheiro");
+      setFileToDelete(null);
     }
   };
 
@@ -164,7 +167,7 @@ const UserFilesModal = ({ userId, userName, onClose }) => {
                       <Download className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(file.id)}
+                      onClick={() => setFileToDelete(file)}
                       className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                       title="Eliminar"
                     >
@@ -187,6 +190,44 @@ const UserFilesModal = ({ userId, userName, onClose }) => {
           </button>
         </div>
       </div>
+      {fileToDelete && (
+        <ModalPortal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-scale-in">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+                  <Trash2 className="h-6 w-6 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Eliminar Ficheiro
+                </h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  Tens a certeza que queres eliminar o ficheiro{" "}
+                  <span className="font-bold text-gray-800">
+                    {fileToDelete.filename}
+                  </span>
+                  ? <br />
+                  Esta ação é irreversível.
+                </p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => setFileToDelete(null)}
+                    className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium text-sm shadow-sm"
+                  >
+                    Sim, Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
     </div>,
     document.body,
   );
