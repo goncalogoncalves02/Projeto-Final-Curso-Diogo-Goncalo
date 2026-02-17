@@ -26,8 +26,14 @@ const VerifyEmail = () => {
   }, [token, navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="p-8 bg-white shadow-lg rounded-lg">
+    <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="relative p-8 bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl w-full max-w-sm mx-4">
         <h2 className="text-2xl font-bold text-center text-blue-600">
           Verificação de Email
         </h2>
