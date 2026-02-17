@@ -93,12 +93,13 @@ const AdminModuleGrades = () => {
     setSelectedEnrollment(enrollment);
     setLoadingGrades(true);
     try {
-      // Fetch existing grades for this student
-      const res = await api.get(
-        `/module_grades/?enrollment_id=${enrollment.id}`,
-      );
+      const [gradesRes, modulesRes] = await Promise.all([
+        api.get(`/module_grades/?enrollment_id=${enrollment.id}`),
+        api.get(`/courses/${selectedCourseId}/modules`),
+      ]);
+      setCourseModules(modulesRes.data);
       const gradesMap = {};
-      res.data.forEach((g) => {
+      gradesRes.data.forEach((g) => {
         gradesMap[g.course_module_id] = {
           grade: g.grade,
           comments: g.comments,
