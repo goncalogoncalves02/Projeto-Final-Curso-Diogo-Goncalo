@@ -1,6 +1,6 @@
 # Sistema de Gestão Escolar ATEC
 
-Sistema completo de gestão para a secretaria da ATEC, com aplicação web (backoffice + frontend), aplicação mobile Android e chatbot com inteligência artificial. Desenvolvido como projeto final do curso **TPSI-PAL0525** (Especialista em Tecnologias e Programação de Sistemas de Informação).
+Sistema completo de gestão para a secretaria da ATEC, com aplicação web (backoffice + frontend), aplicação mobile Android e chatbot com inteligência artificial. Desenvolvido como projeto final do curso **TPSI0525** (Especialista em Tecnologias e Programação de Sistemas de Informação).
 
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-61DAFB?style=flat&logo=react&logoColor=black)
